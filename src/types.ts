@@ -1,9 +1,6 @@
-export type TaskListType = "default" | "my-day" | "habits";
-
 export type TaskList = {
   id: string;
   name: string;
-  type: TaskListType;
 };
 
 export type RecurrenceType =
@@ -38,13 +35,13 @@ export type CalendarColor =
   | "purple"
   | "teal";
 
-export type Calendar = {
+export type UserCalendar = {
   id: string;
   name: string;
   color: CalendarColor;
 };
 
-export type Event = {
+export type UserEvent = {
   id: string;
   title: string;
   startDate: string;
@@ -57,4 +54,4 @@ export type Event = {
 
 export type CalendarItem =
   | { kind: "task"; task: Task }
-  | { kind: "event"; event: Event };
+  | { kind: "event"; event: UserEvent };
