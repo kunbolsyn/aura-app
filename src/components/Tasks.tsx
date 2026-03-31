@@ -47,6 +47,19 @@ const RECURRENCE_OPTIONS = [
   "custom",
 ];
 
+function useClickOutside(
+  ref: React.RefObject<HTMLElement | null>,
+  onClose: () => void,
+) {
+  useEffect(() => {
+    function handle(e: MouseEvent) {
+      if (!ref.current?.contains(e.target as Node)) onClose();
+    }
+    document.addEventListener("mousedown", handle);
+    return () => document.removeEventListener("mousedown", handle);
+  }, [ref, onClose]);
+}
+
 function Tasks({ tasks, setTasks, lists, activeListId }: Props) {
   const [input, setInput] = useState("");
   const [dueDate, setDueDate] = useState<string | null>(null);
@@ -55,6 +68,14 @@ function Tasks({ tasks, setTasks, lists, activeListId }: Props) {
   const [showRecurPopup, setShowRecurPopup] = useState(false);
   const [showCustomDate, setShowCustomDate] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const datePopupRef = useRef<HTMLDivElement>(null);
+  const recurPopupRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(datePopupRef, () => {
+    setShowDatePopup(false);
+    setShowCustomDate(false);
+  });
+  useClickOutside(recurPopupRef, () => setShowRecurPopup(false));
 
   const activeList = lists.find((l) => l.id === activeListId);
   const visibleTasks = tasks.filter((t) => t.listId === activeListId);
@@ -108,7 +129,7 @@ function Tasks({ tasks, setTasks, lists, activeListId }: Props) {
   }
 
   return (
-    <div className="max-w-2xl mx-auto px-8 py-10">
+    <div className="max-w-4xl mx-auto px-8 py-10">
       <style>{`
         @keyframes slideDown {
           from { opacity: 0; transform: translateY(-6px); }
@@ -165,7 +186,10 @@ function Tasks({ tasks, setTasks, lists, activeListId }: Props) {
                 {dueDate && <span>{getDateLabel(dueDate)}</span>}
               </button>
               {showDatePopup && (
-                <div className="popup-animate absolute right-0 top-full mt-1.5 z-10 bg-white border border-stone-200 rounded-xl py-1.5 min-w-44 shadow-sm">
+                <div
+                  ref={datePopupRef}
+                  className="popup-animate absolute right-0 top-full mt-1.5 z-10 bg-white border border-stone-200 rounded-xl py-1.5 min-w-44 shadow-sm"
+                >
                   <button
                     onClick={setToday}
                     className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm text-stone-600 hover:bg-stone-50 hover:text-stone-800 transition-colors"
@@ -224,7 +248,10 @@ function Tasks({ tasks, setTasks, lists, activeListId }: Props) {
                 )}
               </button>
               {showRecurPopup && (
-                <div className="popup-animate absolute right-0 top-full mt-1.5 z-10 bg-white border border-stone-200 rounded-xl py-1.5 min-w-40 shadow-sm">
+                <div
+                  ref={recurPopupRef}
+                  className="popup-animate absolute right-0 top-full mt-1.5 z-10 bg-white border border-stone-200 rounded-xl py-1.5 min-w-40 shadow-sm"
+                >
                   <p className="text-xs text-stone-400 px-3 pb-1 pt-0.5 uppercase tracking-wide font-medium">
                     Repeats
                   </p>
@@ -333,6 +360,14 @@ function TaskRow({
   const [showRecurPopup, setShowRecurPopup] = useState(false);
   const [showCustomDate, setShowCustomDate] = useState(false);
   const boxRef = useRef<HTMLDivElement>(null);
+  const editDatePopupRef = useRef<HTMLDivElement>(null);
+  const editRecurPopupRef = useRef<HTMLDivElement>(null);
+
+  useClickOutside(editDatePopupRef, () => {
+    setShowDatePopup(false);
+    setShowCustomDate(false);
+  });
+  useClickOutside(editRecurPopupRef, () => setShowRecurPopup(false));
 
   // sync local state when task changes externally
   useEffect(() => {
@@ -468,7 +503,10 @@ function TaskRow({
                 {editDate && <span>{getDateLabel(editDate)}</span>}
               </button>
               {showDatePopup && (
-                <div className="popup-animate absolute right-0 top-full mt-1.5 z-20 bg-white border border-stone-200 rounded-xl py-1.5 min-w-44 shadow-sm">
+                <div
+                  ref={editDatePopupRef}
+                  className="popup-animate absolute right-0 top-full mt-1.5 z-20 bg-white border border-stone-200 rounded-xl py-1.5 min-w-44 shadow-sm"
+                >
                   <button
                     onClick={setToday}
                     className="w-full text-left flex items-center gap-2.5 px-3 py-2 text-sm text-stone-600 hover:bg-stone-50 transition-colors"
@@ -527,7 +565,10 @@ function TaskRow({
                 )}
               </button>
               {showRecurPopup && (
-                <div className="popup-animate absolute right-0 top-full mt-1.5 z-20 bg-white border border-stone-200 rounded-xl py-1.5 min-w-40 shadow-sm">
+                <div
+                  ref={editRecurPopupRef}
+                  className="popup-animate absolute right-0 top-full mt-1.5 z-20 bg-white border border-stone-200 rounded-xl py-1.5 min-w-40 shadow-sm"
+                >
                   <p className="text-xs text-stone-400 px-3 pb-1 pt-0.5 uppercase tracking-wide font-medium">
                     Repeats
                   </p>
