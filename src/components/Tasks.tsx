@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { CalendarDays, Repeat, Plus, Check, Trash2  } from "lucide-react";
+import { CalendarDays, Repeat, Plus, Check, Trash2, X, Edit3 } from "lucide-react";
 import type { Task, TaskList, RecurrenceType } from "../types";
 
 type Props = {
@@ -7,6 +7,7 @@ type Props = {
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>;
   lists: TaskList[];
   activeListId: string;
+  onCloseTasksMobile?: () => void;
 };
 
 // --- Helper Functions ---
@@ -86,7 +87,7 @@ const RECURRENCE_OPTIONS: NonNullable<RecurrenceType>[] = [
 
 // --- Main Component ---
 
-export default function Tasks({ tasks, setTasks, lists, activeListId }: Props) {
+export default function Tasks({ tasks, setTasks, lists, activeListId, onCloseTasksMobile }: Props) {
   const [input, setInput] = useState("");
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [recurrence, setRecurrence] = useState<RecurrenceType>(null);
@@ -165,169 +166,229 @@ export default function Tasks({ tasks, setTasks, lists, activeListId }: Props) {
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-8 py-10">
-      {/* Header */}
-      <h2 className="text-2xl font-medium text-stone-800 mb-1">
-        {activeList?.name ?? "Tasks"}
-      </h2>
-      <p className="text-sm text-stone-400 mb-8">
-        {new Date().toLocaleDateString("en-GB", {
-          weekday: "long",
-          day: "numeric",
-          month: "long",
-        })}
-      </p>
+    <div className="w-full h-full flex flex-col bg-white">
+      {/* Drawer Close Button for Mobile / Tablet Viewports */}
+      <div className="flex items-center justify-between px-6 pt-5 lg:hidden border-b border-slate-100 pb-3">
+        <span className="font-extrabold text-slate-900 text-base">Tasks List</span>
+        {onCloseTasksMobile && (
+          <button
+            onClick={onCloseTasksMobile}
+            className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition-all"
+          >
+            <X size={18} strokeWidth={2.5} />
+          </button>
+        )}
+      </div>
 
-      {/* Add Task Box - GOOGLE CALENDAR STYLE */}
-      <div className="relative mb-8">
-        <div className="border border-stone-200 rounded-xl bg-white shadow-sm focus-within:ring-2 focus-within:ring-stone-100 transition-all flex flex-col p-3 gap-3">
-          
-          {/* Top Row: Input Field */}
-          <div className="flex items-center gap-3 px-1">
-            <Plus size={16} className="text-stone-400 shrink-0" />
-            <input
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => e.key === "Enter" && addTask()}
-              placeholder="Add a task..."
-              className="flex-1 min-w-0 text-sm text-stone-800 placeholder:text-stone-300 bg-transparent outline-none"
-            />
-          </div>
+      <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin">
+        {/* Header */}
+        <div className="mb-6">
+          <h2 className="text-xl font-extrabold text-slate-950 flex items-center justify-between">
+            <span>{activeList?.name ?? "Tasks"}</span>
+          </h2>
+          <p className="text-xs font-bold text-slate-400 mt-0.5 uppercase tracking-wide">
+            {new Date().toLocaleDateString("en-GB", {
+              weekday: "long",
+              day: "numeric",
+              month: "short",
+            })}
+          </p>
+        </div>
 
-          {/* Bottom Row: Action Buttons */}
-          <div className="flex items-center gap-2 pl-7 shrink-0 flex-wrap">
+        {/* Add Task Box - GOOGLE CALENDAR STYLE */}
+        <div className="mb-6">
+          <div className="border border-slate-200/80 rounded-2xl bg-slate-50/50 hover:bg-white shadow-xs focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 focus-within:bg-white transition-all flex flex-col p-3.5 gap-3">
             
-            {/* Native Date Picker */}
-            <div className="relative flex items-center justify-center group shrink-0">
+            {/* Top Row: Input Field */}
+            <div className="flex items-center gap-2.5">
+              <Plus size={18} className="text-slate-400 shrink-0" strokeWidth={2.5} />
               <input
-                type="date"
-                value={dueDate ?? ""}
-                onChange={(e) => setDueDate(e.target.value || null)}
-                className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && addTask()}
+                placeholder="Add a task..."
+                className="flex-1 min-w-0 text-sm font-semibold text-slate-800 placeholder:text-slate-400 bg-transparent outline-none"
               />
-              <button
-                type="button"
-                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors ${
-                  dueDate
-                    ? "text-stone-700 bg-stone-100"
-                    : "text-stone-400 group-hover:text-stone-600 group-hover:bg-stone-50 border border-transparent group-hover:border-stone-100"
-                }`}
-              >
-                <CalendarDays size={14} />
-                {dueDate ? <span>{getDateLabel(dueDate)}</span> : <span>Date</span>}
-              </button>
             </div>
 
-            {/* Recurrence Button */}
-            <div className="relative shrink-0" ref={recurPopupRef}>
-              <button
-                onClick={() => setShowRecurPopup((p) => !p)}
-                className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md text-xs transition-colors ${
-                  recurrence || showRecurPopup
-                    ? "text-stone-700 bg-stone-100"
-                    : "text-stone-400 hover:text-stone-600 hover:bg-stone-50 border border-transparent hover:border-stone-100"
-                }`}
-              >
-                <Repeat size={14} />
-                {recurrence ? (
-                  <span>
-                    {recurrence.charAt(0).toUpperCase() + recurrence.slice(1)}
-                  </span>
-                ) : (
-                  <span>Repeat</span>
-                )}
-              </button>
+            {/* Bottom Row: Action Buttons */}
+            <div className="flex items-center gap-2 flex-wrap pl-1.5">
               
-              {/* Recurrence Dropdown */}
-              {showRecurPopup && (
-                <div className="absolute left-0 top-full mt-2 z-20 bg-white border border-stone-200 rounded-xl py-2 min-w-40 shadow-lg">
-                  <p className="text-[10px] text-stone-400 px-3 pb-1 uppercase tracking-wider font-semibold">
-                    Repeat Pattern
-                  </p>
-                  <button
-                    onClick={() => {
-                      setRecurrence(null);
-                      setShowRecurPopup(false);
-                    }}
-                    className="w-full text-left px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-50 transition-colors"
-                  >
-                    None
-                  </button>
-                  {RECURRENCE_OPTIONS.map((r) => (
+              {/* Native Date Picker */}
+              <div className="relative flex items-center justify-center shrink-0">
+                <input
+                  type="date"
+                  value={dueDate ?? ""}
+                  onChange={(e) => setDueDate(e.target.value || null)}
+                  className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+                />
+                <div
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                    dueDate
+                      ? "text-blue-700 bg-blue-50 border border-blue-200"
+                      : "text-slate-500 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-100/50"
+                  }`}
+                >
+                  <CalendarDays size={14} strokeWidth={2.5} />
+                  {dueDate ? <span>{getDateLabel(dueDate)}</span> : <span>Set Date</span>}
+                  
+                  {/* Clear date option */}
+                  {dueDate && (
                     <button
-                      key={r}
-                      onClick={() => {
-                        setRecurrence(r);
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDueDate(null);
+                      }}
+                      className="ml-1 z-20 p-0.5 hover:bg-blue-200/50 rounded text-blue-800"
+                    >
+                      <X size={12} strokeWidth={3} />
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              {/* Recurrence Button */}
+              <div className="relative shrink-0" ref={recurPopupRef}>
+                <div
+                  onClick={() => setShowRecurPopup((p) => !p)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold cursor-pointer transition-all ${
+                    recurrence || showRecurPopup
+                      ? "text-emerald-700 bg-emerald-50 border border-emerald-200"
+                      : "text-slate-500 bg-white border border-slate-200 hover:border-slate-300 hover:bg-slate-100/50"
+                  }`}
+                >
+                  <Repeat size={14} strokeWidth={2.5} />
+                  {recurrence ? (
+                    <span>
+                      {recurrence.charAt(0).toUpperCase() + recurrence.slice(1)}
+                    </span>
+                  ) : (
+                    <span>Repeat</span>
+                  )}
+
+                  {/* Clear recurrence option */}
+                  {recurrence && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setRecurrence(null);
                         setShowRecurPopup(false);
                       }}
-                      className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
-                        recurrence === r
-                          ? "text-stone-900 font-medium bg-stone-50"
-                          : "text-stone-600 hover:bg-stone-50"
-                      }`}
+                      className="ml-1 p-0.5 hover:bg-emerald-200/50 rounded text-emerald-800"
                     >
-                      {r.charAt(0).toUpperCase() + r.slice(1)}
+                      <X size={12} strokeWidth={3} />
                     </button>
-                  ))}
+                  )}
                 </div>
+                
+                {/* Recurrence Dropdown */}
+                {showRecurPopup && (
+                  <div className="absolute left-0 top-full mt-2 z-20 bg-white border border-slate-200 rounded-2xl py-2.5 min-w-44 shadow-lg shadow-slate-200/50">
+                    <p className="text-[10px] text-slate-400 px-3.5 pb-1.5 uppercase tracking-wider font-extrabold">
+                      Repeat Pattern
+                    </p>
+                    <button
+                      onClick={() => {
+                        setRecurrence(null);
+                        setShowRecurPopup(false);
+                      }}
+                      className="w-full text-left px-3.5 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 transition-colors"
+                    >
+                      None
+                    </button>
+                    {RECURRENCE_OPTIONS.map((r) => (
+                      <button
+                        key={r}
+                        onClick={() => {
+                          setRecurrence(r);
+                          setShowRecurPopup(false);
+                        }}
+                        className={`w-full text-left px-3.5 py-2 text-xs font-semibold transition-colors ${
+                          recurrence === r
+                            ? "text-emerald-700 font-bold bg-emerald-50"
+                            : "text-slate-600 hover:bg-slate-50"
+                        }`}
+                      >
+                        {r.charAt(0).toUpperCase() + r.slice(1)}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Add task CTA */}
+              {input.trim() && (
+                <button
+                  onClick={addTask}
+                  className="ml-auto flex items-center justify-center p-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-xl transition-all shadow-xs"
+                >
+                  <Check size={14} strokeWidth={3} />
+                </button>
               )}
             </div>
           </div>
         </div>
+
+        {/* Empty state */}
+        {pendingTasks.length === 0 && completedTasks.length === 0 && (
+          <div className="text-center py-12 px-4 bg-slate-50 rounded-2xl border border-slate-100">
+            <p className="text-sm font-bold text-slate-400">
+              No tasks in this list
+            </p>
+            <p className="text-xs text-slate-400 mt-1">
+              Add one using the input field above.
+            </p>
+          </div>
+        )}
+
+        {/* Grouped Pending Tasks */}
+        {groupTasks(pendingTasks).map(([header, group]) => (
+          <div key={header} className="mb-6">
+            <p className="text-xs text-slate-400 uppercase tracking-wider font-extrabold mb-2 pl-2">
+              {header}
+            </p>
+            <div className="space-y-1.5">
+              {group.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  onToggle={toggleTask}
+                  onDelete={deleteTask}
+                  onUpdate={updateTask}
+                  isEditing={editingId === task.id}
+                  onStartEdit={() => setEditingId(task.id)}
+                  onStopEdit={() => setEditingId(null)}
+                />
+              ))}
+            </div>
+          </div>
+        ))}
+
+        {/* Completed Tasks */}
+        {completedTasks.length > 0 && (
+          <div className="mt-8 border-t border-slate-100 pt-5">
+            <p className="text-xs text-slate-400 uppercase tracking-wider font-extrabold mb-2.5 pl-2">
+              Completed · {completedTasks.length}
+            </p>
+            <div className="space-y-1 opacity-75">
+              {completedTasks.map((task) => (
+                <TaskRow
+                  key={task.id}
+                  task={task}
+                  onToggle={toggleTask}
+                  onDelete={deleteTask}
+                  onUpdate={updateTask}
+                  isEditing={editingId === task.id}
+                  onStartEdit={() => setEditingId(task.id)}
+                  onStopEdit={() => setEditingId(null)}
+                />
+              ))}
+            </div>
+          </div>
+        )}
       </div>
-
-      {/* Empty state */}
-      {pendingTasks.length === 0 && completedTasks.length === 0 && (
-        <p className="text-sm text-stone-400 text-center mt-16">
-          No tasks yet. Add one above.
-        </p>
-      )}
-
-      {/* Grouped Pending Tasks */}
-      {groupTasks(pendingTasks).map(([header, group]) => (
-        <div key={header} className="mb-6">
-          <p className="text-xs text-stone-400 uppercase tracking-widest font-medium mb-3 pl-1">
-            {header}
-          </p>
-          <div className="space-y-1">
-            {group.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                onToggle={toggleTask}
-                onDelete={deleteTask}
-                onUpdate={updateTask}
-                isEditing={editingId === task.id}
-                onStartEdit={() => setEditingId(task.id)}
-                onStopEdit={() => setEditingId(null)}
-              />
-            ))}
-          </div>
-        </div>
-      ))}
-
-      {/* Completed Tasks */}
-      {completedTasks.length > 0 && (
-        <div className="mt-10">
-          <p className="text-xs text-stone-400 uppercase tracking-widest font-medium mb-3 pl-1">
-            Completed · {completedTasks.length}
-          </p>
-          <div className="space-y-1 opacity-70">
-            {completedTasks.map((task) => (
-              <TaskRow
-                key={task.id}
-                task={task}
-                onToggle={toggleTask}
-                onDelete={deleteTask}
-                onUpdate={updateTask}
-                isEditing={editingId === task.id}
-                onStartEdit={() => setEditingId(task.id)}
-                onStopEdit={() => setEditingId(null)}
-              />
-            ))}
-          </div>
-        </div>
-      )}
     </div>
   );
 }
@@ -345,33 +406,104 @@ type TaskRowProps = {
 };
 
 function TaskRow({ task, onToggle, onDelete, onUpdate, isEditing, onStartEdit, onStopEdit }: TaskRowProps) {
-  const [editTitle, setEditTitle] = useState(task.title);
+  // Detailed edit states (Title, Date, Recurrence)
+  const [editTitle, setEditTitle]           = useState(task.title);
+  const [editDueDate, setEditDueDate]       = useState<string | null>(task.dueDate);
+  const [editRecurrence, setEditRecurrence] = useState<RecurrenceType>(task.recurrence);
 
   useEffect(() => {
     setEditTitle(task.title);
-  }, [task.title]);
+    setEditDueDate(task.dueDate);
+    setEditRecurrence(task.recurrence);
+  }, [task.title, task.dueDate, task.recurrence]);
 
   function handleSave() {
-    if (editTitle.trim() && editTitle !== task.title) {
-      onUpdate(task.id, { title: editTitle.trim() });
+    if (editTitle.trim()) {
+      onUpdate(task.id, {
+        title: editTitle.trim(),
+        dueDate: editDueDate,
+        recurrence: editRecurrence
+      });
     }
     onStopEdit();
   }
 
   if (isEditing) {
     return (
-      <div className="flex items-center gap-3 px-2 py-2 bg-stone-50 rounded-lg border border-stone-200">
+      <div className="flex flex-col gap-2.5 p-3.5 bg-slate-50 border border-slate-200/80 rounded-2xl shadow-xs transition-all animate-in fade-in zoom-in-95 duration-100">
+        
+        {/* Title Input */}
         <input
           autoFocus
           value={editTitle}
           onChange={(e) => setEditTitle(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === "Enter") handleSave();
-            if (e.key === "Escape") onStopEdit();
-          }}
-          onBlur={handleSave}
-          className="flex-1 bg-transparent text-sm text-stone-800 outline-none"
+          placeholder="Task title..."
+          className="bg-white border border-slate-200 rounded-xl px-2.5 py-1.5 text-sm font-semibold text-slate-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
         />
+
+        {/* Row for Date Picker & Recurrence Selection */}
+        <div className="flex gap-2 flex-wrap">
+          
+          {/* Due date picker */}
+          <div className="flex-1 min-w-28 relative">
+            <input
+              type="date"
+              value={editDueDate ?? ""}
+              onChange={(e) => setEditDueDate(e.target.value || null)}
+              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full z-10"
+            />
+            <div className="flex items-center gap-1.5 px-2.5 py-2 border border-slate-200 bg-white rounded-xl text-xs font-semibold text-slate-600 hover:border-slate-300">
+              <CalendarDays size={13} className="text-slate-400" />
+              <span className="truncate">
+                {editDueDate ? getDateLabel(editDueDate) : "No Date"}
+              </span>
+              {editDueDate && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setEditDueDate(null);
+                  }}
+                  className="ml-auto z-20 p-0.5 hover:bg-slate-100 rounded"
+                >
+                  <X size={10} strokeWidth={3} />
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Recurrence Dropdown */}
+          <select
+            value={editRecurrence ?? ""}
+            onChange={(e) => setEditRecurrence((e.target.value as RecurrenceType) || null)}
+            className="flex-1 min-w-28 px-2.5 py-2 border border-slate-200 bg-white rounded-xl text-xs font-semibold text-slate-600 hover:border-slate-300 outline-none"
+          >
+            <option value="">No Repeat</option>
+            {RECURRENCE_OPTIONS.map(opt => (
+              <option key={opt} value={opt}>
+                {opt.charAt(0).toUpperCase() + opt.slice(1)}
+              </option>
+            ))}
+          </select>
+
+        </div>
+
+        {/* Editor controls */}
+        <div className="flex gap-2 justify-end mt-1">
+          <button
+            onClick={onStopEdit}
+            className="px-3 py-1.5 border border-slate-200 hover:bg-white text-slate-500 font-semibold text-xs rounded-xl transition-all"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSave}
+            className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs rounded-xl shadow-xs transition-all flex items-center gap-1"
+          >
+            <Check size={12} strokeWidth={3} />
+            Save Changes
+          </button>
+        </div>
+
       </div>
     );
   }
@@ -380,45 +512,64 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, isEditing, onStartEdit, o
     <div 
       draggable
       onDragStart={(e) => {
-        // Sets the task ID to be read by the drop zone
         e.dataTransfer.setData("taskId", task.id);
         e.dataTransfer.effectAllowed = "move";
       }}
-      className="group flex items-start gap-3 py-2 px-2 rounded-lg hover:bg-stone-50 transition-colors cursor-grab active:cursor-grabbing"
+      className="group flex items-start gap-3 py-2.5 px-3 rounded-xl border border-transparent hover:border-slate-100 hover:bg-slate-50/50 transition-all cursor-grab active:cursor-grabbing"
     >
+      {/* Complete Task checkbox */}
       <button
         onClick={() => onToggle(task.id)}
-        className={`mt-0.5 flex-shrink-0 w-4 h-4 rounded-full border flex items-center justify-center transition-colors ${
+        className={`mt-0.5 flex-shrink-0 w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all ${
           task.completed
-            ? "bg-stone-800 border-stone-800 text-white"
-            : "border-stone-300 hover:border-stone-400"
+            ? "bg-emerald-600 border-emerald-600 text-white"
+            : "border-slate-300 hover:border-slate-400 bg-white"
         }`}
       >
-        {task.completed && <Check size={10} strokeWidth={3} />}
+        {task.completed && <Check size={11} strokeWidth={3.5} />}
       </button>
 
+      {/* Task Details */}
       <div className="flex-1 min-w-0" onDoubleClick={onStartEdit}>
-        <p className={`text-sm truncate ${task.completed ? "text-stone-400 line-through" : "text-stone-700"}`}>
+        <p className={`text-sm font-semibold truncate ${task.completed ? "text-slate-400 line-through" : "text-slate-800"}`}>
           {task.title}
         </p>
         
-        {/* Indicators beneath the title (Recurrence) */}
-        {!task.completed && task.recurrence && (
-          <div className="flex items-center gap-3 mt-1 text-[10px] text-stone-400">
-            <div className="flex items-center gap-1">
-              <Repeat size={10} />
+        {/* Indicators beneath the title (Due Date & Recurrence) */}
+        <div className="flex items-center gap-2 mt-1">
+          {task.dueDate && (
+            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+              task.completed 
+                ? "bg-slate-100 text-slate-400" 
+                : "bg-blue-50 text-blue-600"
+            }`}>
+              {getDateLabel(task.dueDate)}
+            </span>
+          )}
+          {!task.completed && task.recurrence && (
+            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
+              <Repeat size={10} strokeWidth={2.5} />
               <span>Repeats {task.recurrence}</span>
             </div>
-          </div>
-        )}
+          )}
+        </div>
       </div>
 
-      <button
-        onClick={() => onDelete(task.id)}
-        className="opacity-0 group-hover:opacity-100 p-1 text-stone-300 hover:text-red-500 hover:bg-red-50 rounded transition-all shrink-0"
-      >
-        <Trash2 size={14} />
-      </button>
+      {/* Control Action overlay */}
+      <div className="opacity-0 group-hover:opacity-100 transition-all duration-100 flex items-center gap-0.5 shrink-0 ml-1">
+        <button
+          onClick={onStartEdit}
+          className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-all"
+        >
+          <Edit3 size={13} strokeWidth={2.5} />
+        </button>
+        <button
+          onClick={() => onDelete(task.id)}
+          className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
+        >
+          <Trash2 size={13} strokeWidth={2.5} />
+        </button>
+      </div>
     </div>
   );
 }

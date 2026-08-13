@@ -1,5 +1,5 @@
 import { useState, useRef } from "react"
-import { ChevronLeft, ChevronRight } from "lucide-react"
+import { ChevronLeft, ChevronRight, ListTodo, Plus, CalendarDays, MapPin, AlignLeft, Clock, X } from "lucide-react"
 import type { UserEvent, UserCalendar, Task } from "../types"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -20,6 +20,8 @@ type Props = {
   setTasks: React.Dispatch<React.SetStateAction<Task[]>>
   calendars: UserCalendar[]
   visibleCalendarIds: string[]
+  onToggleTasks?: () => void
+  isTasksOpen?: boolean
 }
 
 type PopupData = {
@@ -32,12 +34,12 @@ type PopupData = {
 // ─── Color maps ───────────────────────────────────────────────────────────────
 
 const COLOR_EVENT: Record<string, string> = {
-  blue:   'bg-blue-50 border-blue-400 text-blue-800',
-  green:  'bg-green-50 border-green-400 text-green-800',
-  red:    'bg-red-50 border-red-400 text-red-800',
-  orange: 'bg-orange-50 border-orange-400 text-orange-800',
-  purple: 'bg-purple-50 border-purple-400 text-purple-800',
-  teal:   'bg-teal-50 border-teal-400 text-teal-800',
+  blue:   'bg-blue-50 border-blue-500 text-blue-800 hover:bg-blue-100/70',
+  green:  'bg-emerald-50 border-emerald-500 text-emerald-800 hover:bg-emerald-100/70',
+  red:    'bg-rose-50 border-rose-500 text-rose-800 hover:bg-rose-100/70',
+  orange: 'bg-amber-50 border-amber-500 text-amber-800 hover:bg-amber-100/70',
+  purple: 'bg-violet-50 border-violet-500 text-violet-800 hover:bg-violet-100/70',
+  teal:   'bg-cyan-50 border-cyan-500 text-cyan-800 hover:bg-cyan-100/70',
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -114,85 +116,96 @@ function EventPopup({ data, calendars, onSave, onClose }: EventPopupProps) {
   return (
     <>
       {/* backdrop */}
-      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div className="fixed inset-0 z-40 bg-slate-900/10 backdrop-blur-xs" onClick={onClose} />
 
       <div
-        className="fixed z-50 bg-white border border-stone-200 rounded-xl shadow-lg p-4 w-72"
+        className="fixed z-50 bg-white border border-slate-200 rounded-3xl shadow-xl p-5 w-80 animate-in fade-in zoom-in-95 duration-100"
         style={{ top: data.y, left: data.x }}
       >
+        <div className="flex items-center justify-between mb-4">
+          <span className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+            <Plus size={12} strokeWidth={3} className="text-blue-600" /> New Event
+          </span>
+          <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-all">
+            <X size={14} strokeWidth={2.5} />
+          </button>
+        </div>
+
         <input
           autoFocus
           placeholder="Event title"
           value={title}
           onChange={e => setTitle(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') onClose() }}
-          className="w-full text-sm text-stone-800 border-b border-stone-200 pb-2 mb-3 outline-none placeholder:text-stone-300 font-medium"
+          className="w-full text-base text-slate-900 border border-slate-200 rounded-xl px-3 py-2 mb-4 outline-none placeholder:text-slate-400 font-bold focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
         />
 
-        <div className="flex flex-col gap-2 mb-3">
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-stone-400 w-16 shrink-0">Start</label>
-            <input
-              type="datetime-local"
-              value={startDate}
-              onChange={e => setStartDate(e.target.value)}
-              className="text-xs text-stone-600 border border-stone-200 rounded-lg px-2 py-1 outline-none flex-1"
-            />
+        <div className="flex flex-col gap-3 mb-5">
+          <div className="flex items-center gap-2.5">
+            <Clock size={14} className="text-slate-400 shrink-0" strokeWidth={2.5} />
+            <div className="flex-1 flex flex-col gap-1.5">
+              <input
+                type="datetime-local"
+                value={startDate}
+                onChange={e => setStartDate(e.target.value)}
+                className="text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none focus:border-blue-500 flex-1"
+              />
+              <input
+                type="datetime-local"
+                value={endDate}
+                onChange={e => setEndDate(e.target.value)}
+                className="text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none focus:border-blue-500 flex-1"
+              />
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-stone-400 w-16 shrink-0">End</label>
-            <input
-              type="datetime-local"
-              value={endDate}
-              onChange={e => setEndDate(e.target.value)}
-              className="text-xs text-stone-600 border border-stone-200 rounded-lg px-2 py-1 outline-none flex-1"
-            />
-          </div>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-stone-400 w-16 shrink-0">Calendar</label>
+
+          <div className="flex items-center gap-2.5">
+            <CalendarDays size={14} className="text-slate-400 shrink-0" strokeWidth={2.5} />
             <select
               value={calendarId}
               onChange={e => setCalendarId(e.target.value)}
-              className="text-xs text-stone-600 border border-stone-200 rounded-lg px-2 py-1 outline-none flex-1"
+              className="text-xs font-bold text-slate-600 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none focus:border-blue-500 flex-1"
             >
               {calendars.map(c => (
                 <option key={c.id} value={c.id}>{c.name}</option>
               ))}
             </select>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="text-xs text-stone-400 w-16 shrink-0">Location</label>
+
+          <div className="flex items-center gap-2.5">
+            <MapPin size={14} className="text-slate-400 shrink-0" strokeWidth={2.5} />
             <input
-              placeholder="Optional"
+              placeholder="Add location (Optional)"
               value={location}
               onChange={e => setLocation(e.target.value)}
-              className="text-xs text-stone-600 border border-stone-200 rounded-lg px-2 py-1 outline-none flex-1 placeholder:text-stone-200"
+              className="text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none focus:border-blue-500 flex-1 placeholder:text-slate-400"
             />
           </div>
-          <div className="flex items-start gap-2">
-            <label className="text-xs text-stone-400 w-16 shrink-0 pt-1">Notes</label>
+
+          <div className="flex items-start gap-2.5">
+            <AlignLeft size={14} className="text-slate-400 shrink-0 pt-1" strokeWidth={2.5} />
             <textarea
-              placeholder="Optional"
+              placeholder="Add description (Optional)"
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={2}
-              className="text-xs text-stone-600 border border-stone-200 rounded-lg px-2 py-1 outline-none flex-1 placeholder:text-stone-200 resize-none"
+              className="text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none focus:border-blue-500 flex-1 placeholder:text-slate-400 resize-none"
             />
           </div>
         </div>
 
-        <div className="flex justify-end gap-2">
+        <div className="flex justify-end gap-1.5 pt-2 border-t border-slate-100">
           <button
             onClick={onClose}
-            className="text-xs text-stone-400 hover:text-stone-600 px-3 py-1.5 rounded-lg transition-colors"
+            className="text-xs font-bold text-slate-500 hover:bg-slate-50 px-3 py-2 rounded-xl transition-all"
           >
             Cancel
           </button>
           <button
             onClick={handleSave}
-            className="text-xs text-white bg-stone-800 hover:bg-stone-700 px-3 py-1.5 rounded-lg transition-colors"
+            className="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl shadow-xs transition-all"
           >
-            Save event
+            Save Event
           </button>
         </div>
       </div>
@@ -235,7 +248,6 @@ function WeekView({
   }
 
   function handleMouseDown(e: React.MouseEvent<HTMLDivElement>, day: Date) {
-    // only left click
     if (e.button !== 0) return
     const hour = getHourFromY(e.currentTarget, e.clientY)
     dragStart.current = { day, hour }
@@ -258,8 +270,8 @@ function WeekView({
       setDragRange(null)
       return
     }
-    const popupX = Math.min(e.clientX + 12, window.innerWidth  - 300)
-    const popupY = Math.min(e.clientY - 40, window.innerHeight - 340)
+    const popupX = Math.min(e.clientX + 12, window.innerWidth  - 340)
+    const popupY = Math.min(e.clientY - 40, window.innerHeight - 380)
     onCreateEvent({
       startDate: toDateTimeLocal(dragRange.day, dragRange.startHour),
       endDate:   toDateTimeLocal(dragRange.day, dragRange.endHour),
@@ -285,8 +297,6 @@ function WeekView({
     return calendars.find(c => c.id === calendarId)?.color ?? 'blue'
   }
 
-  // ── HTML5 drop handlers for tasks ──────────────────────────────────────────
-
   function handleDragOver(e: React.DragEvent<HTMLDivElement>, day: Date) {
     e.preventDefault()
     setDragOverCol(toISODate(day))
@@ -302,21 +312,23 @@ function WeekView({
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden">
+    <div className="flex flex-col flex-1 overflow-hidden bg-slate-50">
 
       {/* Day headers */}
       <div
-        className="grid border-b border-stone-200 shrink-0"
-        style={{ gridTemplateColumns: '52px repeat(7, 1fr)' }}
+        className="grid border-b border-slate-200 shrink-0 bg-white"
+        style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}
       >
-        <div className="border-r border-stone-100" />
+        <div className="border-r border-slate-100" />
         {weekDays.map((day, i) => (
-          <div key={i} className="text-center py-2 border-r border-stone-100 last:border-r-0">
-            <p className="text-[10px] text-stone-400 uppercase tracking-wide">
+          <div key={i} className="text-center py-2.5 border-r border-slate-100 last:border-r-0">
+            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
               {day.toLocaleDateString('en-GB', { weekday: 'short' })}
             </p>
-            <div className={`text-base font-medium mx-auto w-7 h-7 flex items-center justify-center rounded-full ${
-              isSameDay(day, today) ? 'bg-stone-800 text-white' : 'text-stone-700'
+            <div className={`text-base font-bold mt-1 mx-auto w-8 h-8 flex items-center justify-center rounded-xl transition-all ${
+              isSameDay(day, today)
+                ? 'bg-blue-600 text-white shadow-xs shadow-blue-600/25'
+                : 'text-slate-800'
             }`}>
               {day.getDate()}
             </div>
@@ -326,18 +338,18 @@ function WeekView({
 
       {/* All-day tasks row */}
       <div
-        className="grid border-b border-stone-200 shrink-0"
-        style={{ gridTemplateColumns: '52px repeat(7, 1fr)' }}
+        className="grid border-b border-slate-200 shrink-0 bg-slate-50"
+        style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}
       >
-        <div className="border-r border-stone-100 flex items-center justify-end pr-1.5 py-1">
-          <span className="text-[9px] text-stone-300 uppercase tracking-wide">tasks</span>
+        <div className="border-r border-slate-100 flex items-center justify-end pr-2.5 py-1.5">
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">tasks</span>
         </div>
         {weekDays.map((day, i) => (
-          <div key={i} className="border-r border-stone-100 last:border-r-0 p-1 min-h-7 flex flex-col gap-0.5">
+          <div key={i} className="border-r border-slate-100 last:border-r-0 p-1.5 min-h-8 flex flex-col gap-1 bg-slate-100/30">
             {getTasksForDay(day).map(task => (
               <div
                 key={task.id}
-                className="text-[10px] text-stone-500 bg-stone-100 border-l-2 border-stone-400 rounded px-1.5 py-0.5 truncate"
+                className="text-[11px] font-bold text-slate-700 bg-white border border-slate-200 border-l-4 border-l-slate-500 rounded-lg px-2 py-1 truncate shadow-2xs"
               >
                 {task.title}
               </div>
@@ -349,18 +361,18 @@ function WeekView({
       {/* Time grid */}
       <div className="flex-1 overflow-y-auto">
         <div
-          className="grid"
-          style={{ gridTemplateColumns: '52px repeat(7, 1fr)' }}
+          className="grid relative"
+          style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}
         >
           {/* Time labels */}
-          <div className="border-r border-stone-100">
+          <div className="border-r border-slate-100 bg-white">
             {HOURS.map(h => (
               <div
                 key={h}
                 style={{ height: HOUR_HEIGHT }}
-                className="flex items-start justify-end pr-2 pt-1"
+                className="flex items-start justify-end pr-3 pt-2"
               >
-                <span className="text-[10px] text-stone-300 leading-none">{formatHour(h)}</span>
+                <span className="text-xs font-bold text-slate-400 leading-none">{formatHour(h)}</span>
               </div>
             ))}
           </div>
@@ -374,9 +386,9 @@ function WeekView({
             return (
               <div
                 key={i}
-                className={`border-r border-stone-100 last:border-r-0 relative select-none cursor-crosshair ${
-                  isSameDay(day, today) ? 'bg-stone-50/40' : ''
-                } ${isDragOver ? 'bg-blue-50/40' : ''}`}
+                className={`border-r border-slate-150 last:border-r-0 relative select-none cursor-crosshair transition-colors ${
+                  isSameDay(day, today) ? 'bg-blue-50/15' : 'bg-white'
+                } ${isDragOver ? 'bg-blue-50/60' : ''}`}
                 style={{ height: HOUR_HEIGHT * HOURS.length }}
                 onMouseDown={e => handleMouseDown(e, day)}
                 onMouseMove={e => handleMouseMove(e, day)}
@@ -390,7 +402,7 @@ function WeekView({
                 {HOURS.map(h => (
                   <div
                     key={h}
-                    className="absolute w-full border-t border-stone-100"
+                    className="absolute w-full border-t border-slate-100 pointer-events-none"
                     style={{ top: (h - START_HOUR) * HOUR_HEIGHT }}
                   />
                 ))}
@@ -399,7 +411,7 @@ function WeekView({
                 {HOURS.map(h => (
                   <div
                     key={`half-${h}`}
-                    className="absolute w-full border-t border-stone-50"
+                    className="absolute w-full border-t border-slate-50/50 border-dashed pointer-events-none"
                     style={{ top: (h - START_HOUR) * HOUR_HEIGHT + HOUR_HEIGHT / 2 }}
                   />
                 ))}
@@ -407,10 +419,10 @@ function WeekView({
                 {/* Drag preview */}
                 {isDraggingHere && dragRange && (
                   <div
-                    className="absolute left-1 right-1 bg-blue-100 border border-blue-300 rounded pointer-events-none opacity-80"
+                    className="absolute left-1 right-1 bg-blue-100/80 border-2 border-blue-400 rounded-xl pointer-events-none z-10"
                     style={{
                       top:    (dragRange.startHour - START_HOUR) * HOUR_HEIGHT,
-                      height: Math.max((dragRange.endHour - dragRange.startHour) * HOUR_HEIGHT, 20),
+                      height: Math.max((dragRange.endHour - dragRange.startHour) * HOUR_HEIGHT, 22),
                     }}
                   />
                 )}
@@ -420,17 +432,17 @@ function WeekView({
                   const start  = new Date(event.startDate)
                   const end    = new Date(event.endDate)
                   const top    = (start.getHours() + start.getMinutes() / 60 - START_HOUR) * HOUR_HEIGHT
-                  const height = Math.max(((end.getTime() - start.getTime()) / 3600000) * HOUR_HEIGHT, 22)
+                  const height = Math.max(((end.getTime() - start.getTime()) / 3600000) * HOUR_HEIGHT, 24)
                   const color  = getCalendarColor(event.calendarId)
 
                   return (
                     <div
                       key={event.id}
-                      className={`absolute left-1 right-1 rounded border-l-2 px-1.5 py-0.5 text-[11px] font-medium overflow-hidden cursor-pointer ${COLOR_EVENT[color]}`}
+                      className={`absolute left-1 right-1 rounded-xl border-l-4 px-2 py-1 text-xs font-bold overflow-hidden cursor-pointer shadow-2xs z-10 transition-all ${COLOR_EVENT[color]}`}
                       style={{ top, height }}
                     >
-                      <p className="truncate leading-tight">{event.title}</p>
-                      <p className="text-[10px] opacity-60 font-normal leading-tight">
+                      <p className="truncate leading-tight font-extrabold">{event.title}</p>
+                      <p className="text-[10px] opacity-75 font-semibold mt-0.5 leading-tight">
                         {start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
                         {' – '}
                         {end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}
@@ -449,7 +461,7 @@ function WeekView({
 
 // ─── Calendar ─────────────────────────────────────────────────────────────────
 
-function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalendarIds }: Props) {
+function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalendarIds, onToggleTasks, isTasksOpen }: Props) {
   const [view, setView]             = useState<View>('week')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [popup, setPopup]           = useState<PopupData | null>(null)
@@ -474,7 +486,6 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
     setPopup(null)
   }
 
-  // called when a task is dropped onto a time slot
   function handleDropTask(taskId: string, date: Date) {
     const isoDate = toISODate(date);
     
@@ -484,38 +495,61 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
   }
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden">
+    <div className="flex flex-col h-full bg-white overflow-hidden">
 
       {/* Toolbar */}
-      <div className="flex items-center gap-2 px-5 py-3 border-b border-stone-200 shrink-0">
-        <button
-          onClick={() => setCurrentDate(new Date())}
-          className="text-xs text-stone-600 border border-stone-200 rounded-lg px-3 py-1.5 hover:bg-stone-50 transition-colors"
-        >
-          Today
-        </button>
-        <button onClick={() => navigate(-1)} className="p-1.5 text-stone-400 hover:text-stone-600 transition-colors rounded-lg hover:bg-stone-50">
-          <ChevronLeft size={15} />
-        </button>
-        <button onClick={() => navigate(1)} className="p-1.5 text-stone-400 hover:text-stone-600 transition-colors rounded-lg hover:bg-stone-50">
-          <ChevronRight size={15} />
-        </button>
-        <span className="text-sm font-medium text-stone-700 flex-1 ml-1">{weekLabel}</span>
+      <div className="flex items-center gap-2 px-5 py-3.5 border-b border-slate-200/80 bg-white shrink-0">
+        
+        {/* Navigation Button Block */}
+        <div className="flex items-center bg-slate-100 p-1 rounded-xl">
+          <button onClick={() => navigate(-1)} className="p-1 text-slate-600 hover:text-slate-900 hover:bg-white rounded-lg transition-all">
+            <ChevronLeft size={16} strokeWidth={2.5} />
+          </button>
+          <button
+            onClick={() => setCurrentDate(new Date())}
+            className="text-xs font-bold text-slate-700 hover:text-slate-900 hover:bg-white px-2.5 py-1 rounded-lg transition-all"
+          >
+            Today
+          </button>
+          <button onClick={() => navigate(1)} className="p-1 text-slate-600 hover:text-slate-900 hover:bg-white rounded-lg transition-all">
+            <ChevronRight size={16} strokeWidth={2.5} />
+          </button>
+        </div>
+
+        {/* Date Title */}
+        <span className="text-sm font-extrabold text-slate-900 flex-1 ml-2 md:text-base leading-none">{weekLabel}</span>
 
         {/* View switcher */}
-        <div className="flex border border-stone-200 rounded-lg overflow-hidden">
+        <div className="flex bg-slate-100 p-1 rounded-xl shrink-0">
           {(['day', 'week', 'month', 'year'] as View[]).map(v => (
             <button
               key={v}
               onClick={() => setView(v)}
-              className={`px-3 py-1.5 text-xs transition-colors capitalize border-r border-stone-200 last:border-r-0 ${
-                view === v ? 'bg-stone-800 text-white' : 'text-stone-500 hover:bg-stone-50'
+              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all capitalize ${
+                view === v 
+                  ? 'bg-white text-blue-600 shadow-2xs' 
+                  : 'text-slate-500 hover:text-slate-800'
               }`}
             >
               {v}
             </button>
           ))}
         </div>
+
+        {/* Desktop Task Toggle (Hidden on mobile as header handles it) */}
+        {onToggleTasks && (
+          <button
+            onClick={onToggleTasks}
+            className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all border ${
+              isTasksOpen 
+                ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+            }`}
+          >
+            <ListTodo size={14} strokeWidth={2.5} />
+            <span>Tasks</span>
+          </button>
+        )}
       </div>
 
       {/* Week view */}
@@ -533,8 +567,10 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
 
       {/* Placeholder views */}
       {(view === 'day' || view === 'month' || view === 'year') && (
-        <div className="flex-1 flex items-center justify-center text-stone-300 text-sm">
-          {view.charAt(0).toUpperCase() + view.slice(1)} view coming soon
+        <div className="flex-1 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 p-6">
+          <CalendarDays size={40} strokeWidth={1.5} className="text-slate-300 animate-bounce" />
+          <p className="font-extrabold text-slate-800 text-sm mt-3">{view.charAt(0).toUpperCase() + view.slice(1)} View is in Development</p>
+          <p className="text-slate-400 text-xs mt-1 text-center max-w-xs">Our team is working on this section. Switch to Week View for a fully interactive schedule.</p>
         </div>
       )}
 
