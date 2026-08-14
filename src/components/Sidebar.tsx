@@ -1,17 +1,11 @@
 import { useState } from "react";
-import { LayoutGrid, CalendarDays, Settings, Plus, ChevronLeft, ChevronRight, Check, Edit3, Trash2, X } from "lucide-react";
-import type { TaskList, UserCalendar, CalendarColor } from "../types";
+import { CalendarDays, Settings, Plus, ChevronLeft, ChevronRight, Check, Edit3, Trash2 } from "lucide-react";
+import type { UserCalendar, CalendarColor } from "../types";
 
 type SidebarProps = {
-  lists: TaskList[];
   calendars: UserCalendar[];
-  activeListId: string;
-  onListSelect: (listId: string) => void;
   visibleCalendarIds: string[];
   onToggleCalendar: (id: string) => void;
-  onAddList: (name: string) => void;
-  onDeleteList: (id: string) => void;
-  onRenameList: (id: string, newName: string) => void;
   onAddCalendar: (name: string, color: UserCalendar['color']) => void;
   onDeleteCalendar: (id: string) => void;
   onUpdateCalendar: (id: string, name: string, color: UserCalendar['color']) => void;
@@ -109,26 +103,13 @@ function MiniCalendar() {
 // ─── Sidebar ──────────────────────────────────────────────────────────────────
 
 function Sidebar({
-  lists,
   calendars,
-  activeListId,
-  onListSelect,
   visibleCalendarIds,
   onToggleCalendar,
-  onAddList,
-  onDeleteList,
-  onRenameList,
   onAddCalendar,
   onDeleteCalendar,
   onUpdateCalendar,
 }: SidebarProps) {
-  const [addingList, setAddingList]         = useState(false)
-  const [newListName, setNewListName]       = useState('')
-
-  // Inline editing lists
-  const [editingListId, setEditingListId]   = useState<string | null>(null)
-  const [editListName, setEditListName]     = useState('')
-
   // Inline editing calendars
   const [editingCalId, setEditingCalId]     = useState<string | null>(null)
   const [editCalName, setEditCalName]       = useState('')
@@ -137,19 +118,6 @@ function Sidebar({
   const [addingCalendar, setAddingCalendar] = useState(false)
   const [newCalName, setNewCalName]         = useState('')
   const [newCalColor, setNewCalColor]       = useState<UserCalendar['color']>('blue')
-
-  function submitList() {
-    if (newListName.trim()) onAddList(newListName.trim())
-    setNewListName('')
-    setAddingList(false)
-  }
-
-  function submitRenameList(id: string) {
-    if (editListName.trim()) {
-      onRenameList(id, editListName.trim())
-    }
-    setEditingListId(null)
-  }
 
   function submitCalendar() {
     if (newCalName.trim()) onAddCalendar(newCalName.trim(), newCalColor)
@@ -181,106 +149,8 @@ function Sidebar({
         <MiniCalendar />
       </div>
 
-      {/* Tasks section */}
-      <div className="px-4 mb-2">
-        <div className="flex items-center justify-between mb-2 px-2">
-          <div className="flex items-center gap-2 text-xs font-extrabold text-slate-400 uppercase tracking-widest">
-            <LayoutGrid size={13} strokeWidth={2.5} /> Lists
-          </div>
-          <button
-            onClick={() => setAddingList(true)}
-            className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-200/60 rounded-lg transition-all"
-          >
-            <Plus size={15} strokeWidth={2.5} />
-          </button>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          {lists.map(list => {
-            const isEditing = editingListId === list.id;
-            const isActive = activeListId === list.id;
-
-            if (isEditing) {
-              return (
-                <div key={list.id} className="flex items-center gap-1.5 px-2 py-1 bg-white border border-slate-200 rounded-xl shadow-xs">
-                  <input
-                    autoFocus
-                    value={editListName}
-                    onChange={e => setEditListName(e.target.value)}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') submitRenameList(list.id)
-                      if (e.key === 'Escape') setEditingListId(null)
-                    }}
-                    onBlur={() => submitRenameList(list.id)}
-                    className="flex-1 text-xs font-semibold py-1 px-1.5 border border-slate-100 rounded-lg outline-none bg-slate-50 text-slate-800"
-                  />
-                  <button onClick={() => submitRenameList(list.id)} className="p-1 text-emerald-600 hover:bg-emerald-50 rounded-lg">
-                    <Check size={12} strokeWidth={3} />
-                  </button>
-                  <button onClick={() => setEditingListId(null)} className="p-1 text-rose-500 hover:bg-rose-50 rounded-lg">
-                    <X size={12} strokeWidth={3} />
-                  </button>
-                </div>
-              )
-            }
-
-            return (
-              <div
-                key={list.id}
-                className={`group flex items-center justify-between px-3 py-2 rounded-xl text-sm font-semibold transition-all ${
-                  isActive
-                    ? 'bg-blue-600 text-white shadow-xs shadow-blue-600/10'
-                    : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-                }`}
-              >
-                <button
-                  onClick={() => onListSelect(list.id)}
-                  className="flex-1 text-left truncate py-0.5"
-                >
-                  {list.name}
-                </button>
-                
-                <div className={`flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity ${isActive ? 'text-white/90' : 'text-slate-400'}`}>
-                  <button
-                    onClick={() => {
-                      setEditListName(list.name)
-                      setEditingListId(list.id)
-                    }}
-                    className={`p-1 hover:bg-white/20 rounded-lg transition-all`}
-                  >
-                    <Edit3 size={12} strokeWidth={2.5} />
-                  </button>
-                  <button
-                    onClick={() => onDeleteList(list.id)}
-                    className="p-1 hover:bg-rose-500 hover:text-white rounded-lg transition-all"
-                  >
-                    <Trash2 size={12} strokeWidth={2.5} />
-                  </button>
-                </div>
-              </div>
-            )
-          })}
-
-          {/* Add list input */}
-          {addingList && (
-            <input
-              autoFocus
-              value={newListName}
-              onChange={e => setNewListName(e.target.value)}
-              onKeyDown={e => {
-                if (e.key === 'Enter') submitList()
-                if (e.key === 'Escape') { setAddingList(false); setNewListName('') }
-              }}
-              onBlur={submitList}
-              placeholder="New list..."
-              className="px-3 py-2 rounded-xl text-sm border border-slate-200 outline-none bg-white text-slate-800 placeholder:text-slate-400 font-semibold focus:ring-2 focus:ring-blue-500/20"
-            />
-          )}
-        </div>
-      </div>
-
       {/* Calendars section */}
-      <div className="px-4 mt-4">
+      <div className="px-4 mt-2">
         <div className="flex items-center justify-between mb-2 px-2">
           <div className="flex items-center gap-2 text-xs font-extrabold text-slate-400 uppercase tracking-widest">
             <CalendarDays size={13} strokeWidth={2.5} /> Calendars

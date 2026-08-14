@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { ChevronLeft, ChevronRight, ListTodo, Plus, CalendarDays, MapPin, AlignLeft, Clock, X } from "lucide-react"
 import type { UserEvent, UserCalendar, Task } from "../types"
 
@@ -223,6 +223,7 @@ type WeekViewProps = {
   visibleCalendarIds: string[]
   onCreateEvent: (popup: PopupData) => void
   onDropTask: (taskId: string, date: Date, hour: number) => void
+  onToggleTasks?: () => void
 }
 
 function WeekView({
@@ -233,7 +234,8 @@ function WeekView({
   visibleCalendarIds,
   onCreateEvent,
   onDropTask,
-}: WeekViewProps) {
+  onToggleTasks,
+}: WeekViewProps & { onToggleTasks?: () => void }) {
   const dragStart = useRef<{ day: Date; hour: number } | null>(null)
   const [dragRange, setDragRange] = useState<{ day: Date; startHour: number; endHour: number } | null>(null)
   const [dragOverCol, setDragOverCol] = useState<string | null>(null)
@@ -319,9 +321,9 @@ function WeekView({
         className="grid border-b border-slate-200 shrink-0 bg-white"
         style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}
       >
-        <div className="border-r border-slate-100" />
+        <div className="border-r border-slate-100/30" />
         {weekDays.map((day, i) => (
-          <div key={i} className="text-center py-2.5 border-r border-slate-100 last:border-r-0">
+          <div key={i} className="text-center py-2.5 border-r border-slate-100/30 last:border-r-0">
             <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
               {day.toLocaleDateString('en-GB', { weekday: 'short' })}
             </p>
@@ -341,11 +343,15 @@ function WeekView({
         className="grid border-b border-slate-200 shrink-0 bg-slate-50"
         style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}
       >
-        <div className="border-r border-slate-100 flex items-center justify-end pr-2.5 py-1.5">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">tasks</span>
+        <div className="border-r border-slate-100/30 flex items-center justify-end pr-2.5 py-1.5">
+          {onToggleTasks ? (
+            <button onClick={onToggleTasks} className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider hover:text-blue-700 hover:bg-slate-50 px-2 py-1 rounded transition-all">Tasks</button>
+          ) : (
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">Tasks</span>
+          )}
         </div>
         {weekDays.map((day, i) => (
-          <div key={i} className="border-r border-slate-100 last:border-r-0 p-1.5 min-h-8 flex flex-col gap-1 bg-slate-100/30">
+          <div key={i} className="border-r border-slate-100/30 last:border-r-0 p-1.5 min-h-8 flex flex-col gap-1 bg-slate-100/30">
             {getTasksForDay(day).map(task => (
               <div
                 key={task.id}
@@ -365,7 +371,7 @@ function WeekView({
           style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}
         >
           {/* Time labels */}
-          <div className="border-r border-slate-100 bg-white">
+          <div className="border-r border-slate-100/30 bg-white">
             {HOURS.map(h => (
               <div
                 key={h}
@@ -386,7 +392,7 @@ function WeekView({
             return (
               <div
                 key={i}
-                className={`border-r border-slate-150 last:border-r-0 relative select-none cursor-crosshair transition-colors ${
+                className={`border-r border-slate-100/30 last:border-r-0 relative select-none cursor-crosshair transition-colors ${
                   isSameDay(day, today) ? 'bg-blue-50/15' : 'bg-white'
                 } ${isDragOver ? 'bg-blue-50/60' : ''}`}
                 style={{ height: HOUR_HEIGHT * HOURS.length }}
@@ -462,6 +468,18 @@ function WeekView({
 // ─── Calendar ─────────────────────────────────────────────────────────────────
 
 function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalendarIds, onToggleTasks, isTasksOpen }: Props) {
+  const [ready, setReady] = useState(false)
+
+  // Defer rendering of the full calendar grid to improve initial paint and perceived performance.
+  useEffect(() => {
+    if ((window as any).requestIdleCallback) {
+      const id = (window as any).requestIdleCallback(() => setReady(true))
+      return () => (window as any).cancelIdleCallback?.(id)
+    }
+    const t = setTimeout(() => setReady(true), 60)
+    return () => clearTimeout(t)
+  }, [])
+
   const [view, setView]             = useState<View>('week')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [popup, setPopup]           = useState<PopupData | null>(null)
@@ -554,15 +572,37 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
 
       {/* Week view */}
       {view === 'week' && (
-        <WeekView
-          weekDays={weekDays}
-          events={events}
-          tasks={tasks}
-          calendars={calendars}
-          visibleCalendarIds={visibleCalendarIds}
-          onCreateEvent={setPopup}
-          onDropTask={handleDropTask}
-        />
+        <>
+          {!ready ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-8">
+              <div className="animate-pulse w-full max-w-4xl">
+                <div className="h-6 bg-slate-100 rounded mb-4" />
+                <div className="grid grid-cols-8 gap-2">
+                  <div className="col-span-1">
+                    <div className="h-40 bg-slate-100 rounded" />
+                  </div>
+                  <div className="col-span-7 space-y-2">
+                    <div className="h-8 bg-slate-100 rounded" />
+                    <div className="h-8 bg-slate-100 rounded" />
+                    <div className="h-8 bg-slate-100 rounded" />
+                  </div>
+                </div>
+              </div>
+              <p className="text-xs text-slate-400 mt-4">Loading calendar…</p>
+            </div>
+          ) : (
+            <WeekView
+              weekDays={weekDays}
+              events={events}
+              tasks={tasks}
+              calendars={calendars}
+              visibleCalendarIds={visibleCalendarIds}
+              onCreateEvent={setPopup}
+              onDropTask={handleDropTask}
+              onToggleTasks={onToggleTasks}
+            />
+          )}
+        </>
       )}
 
       {/* Placeholder views */}

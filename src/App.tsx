@@ -36,9 +36,9 @@ function App() {
     DEFAULT_CALENDARS.map(c => c.id)
   )
 
-  // Drawer states for responsiveness
+  // Drawer states for responsiveness (Tasks sidebar is initially closed on mobile, open on desktop)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
-  const [isTasksOpen, setIsTasksOpen] = useState(false)
+  const [isTasksOpen, setIsTasksOpen] = useState(true) // starts open on desktop
 
   // persisted state — all loaded from localStorage on first render
   const [tasks, setTasks]       = useState<Task[]>      (() => load('aura-tasks',     []))
@@ -61,6 +61,7 @@ function App() {
   function addList(name: string) {
     const newList: TaskList = { id: crypto.randomUUID(), name }
     setLists(prev => [...prev, newList])
+    setActiveListId(newList.id)
   }
 
   function deleteList(id: string) {
@@ -106,7 +107,7 @@ function App() {
     <div className="flex flex-col lg:flex-row h-screen bg-slate-50 text-slate-800 overflow-hidden font-sans">
       
       {/* Mobile Responsive Header */}
-      <header className="lg:hidden flex items-center justify-between px-5 py-3.5 bg-white border-b border-slate-200/80 shadow-sm shrink-0 z-20">
+      <header className="lg:hidden flex items-center justify-between px-5 py-3.5 bg-white border-b border-slate-200/80 shadow-xs shrink-0 z-20">
         <button
           onClick={() => setIsSidebarOpen(true)}
           className="p-2 -ml-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all"
@@ -114,12 +115,14 @@ function App() {
           <Menu size={20} strokeWidth={2.5} />
         </button>
         <span className="font-extrabold text-slate-900 text-lg tracking-tight flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-emerald-600 shadow-sm shadow-emerald-600/30"></span>
+          <span className="w-3 h-3 rounded-full bg-emerald-600 shadow-xs shadow-emerald-600/30"></span>
           Aura
         </span>
         <button
-          onClick={() => setIsTasksOpen(true)}
-          className="p-2 -mr-2 text-slate-600 hover:text-blue-600 hover:bg-slate-100 rounded-xl transition-all relative"
+          onClick={() => setIsTasksOpen(prev => !prev)}
+          className={`p-2 -mr-2 rounded-xl transition-all relative ${
+            isTasksOpen ? "text-blue-600 bg-blue-50" : "text-slate-600 hover:text-blue-600 hover:bg-slate-100"
+          }`}
         >
           <ListTodo size={20} strokeWidth={2.5} />
           {tasks.filter(t => t.listId === activeListId && !t.completed).length > 0 && (
@@ -140,18 +143,9 @@ function App() {
         ${isSidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"}
       `}>
         <Sidebar
-          lists={lists}
           calendars={calendars}
-          activeListId={activeListId}
-          onListSelect={(id) => {
-            setActiveListId(id)
-            setIsSidebarOpen(false) // auto close on mobile
-          }}
           visibleCalendarIds={visibleCalendarIds}
           onToggleCalendar={toggleCalendarVisibility}
-          onAddList={addList}
-          onDeleteList={deleteList}
-          onRenameList={renameList}
           onAddCalendar={addCalendar}
           onDeleteCalendar={deleteCalendar}
           onUpdateCalendar={updateCalendar}
@@ -175,25 +169,31 @@ function App() {
           />
         </div>
 
-        {/* Tasks Panel Overlay and Drawer for Mobile */}
+        {/* Tasks Panel Overlay and Drawer */}
         {isTasksOpen && (
-          <div
-            className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-30 lg:hidden transition-opacity"
-            onClick={() => setIsTasksOpen(false)}
-          />
+          <>
+            <div
+              className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-30 lg:hidden transition-opacity"
+              onClick={() => setIsTasksOpen(false)}
+            />
+            <div className={`
+              fixed inset-y-0 right-0 z-40 w-90 max-w-[85vw] bg-white border-l border-slate-200/80 transform transition-transform duration-300 ease-in-out lg:relative lg:transform-none lg:z-auto lg:w-85 shrink-0 flex
+              ${isTasksOpen ? "translate-x-0" : "translate-x-full"}
+            `}>
+                <Tasks
+                  tasks={tasks}
+                  setTasks={setTasks}
+                  lists={lists}
+                  activeListId={activeListId}
+                  onListSelect={setActiveListId}
+                  onAddList={addList}
+                  onDeleteList={deleteList}
+                  onRenameList={renameList}
+                  onCloseTasksMobile={() => setIsTasksOpen(false)}
+                />
+            </div>
+          </>
         )}
-        <div className={`
-          fixed inset-y-0 right-0 z-40 w-90 max-w-[85vw] bg-white border-l border-slate-200/80 transform transition-transform duration-300 ease-in-out lg:relative lg:transform-none lg:z-auto lg:w-85 shrink-0 flex
-          ${isTasksOpen ? "translate-x-0" : "translate-x-full lg:translate-x-0"}
-        `}>
-          <Tasks
-            tasks={tasks}
-            setTasks={setTasks}
-            lists={lists}
-            activeListId={activeListId}
-            onCloseTasksMobile={() => setIsTasksOpen(false)}
-          />
-        </div>
 
       </div>
 
