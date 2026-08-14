@@ -298,8 +298,8 @@ function Sidebar({
 
       {/* Settings */}
       <div className="mt-auto px-4 pt-4">
-        <button className="flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-400 hover:text-slate-800 hover:bg-slate-200/50 transition-all w-full">
-          <Settings size={14} strokeWidth={2.5} />
+        <button className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-extrabold text-slate-400 uppercase tracking-widest hover:text-slate-800 hover:bg-slate-200/50 transition-all w-full">
+          <Settings size={13} strokeWidth={2.5} />
           Settings
         </button>
       </div>
