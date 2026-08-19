@@ -82,6 +82,29 @@ function toISODate(date: Date): string {
   return `${date.getFullYear()}-${pad(date.getMonth()+1)}-${pad(date.getDate())}`
 }
 
+function getMonthDays(year: number, month: number): Date[] {
+  const date = new Date(year, month, 1)
+  const days: Date[] = []
+  // Get days from previous month to fill the first week
+  const firstDayOfWeek = (date.getDay() + 6) % 7
+  const prevMonth = new Date(year, month, 0)
+  for (let i = firstDayOfWeek - 1; i >= 0; i--) {
+    days.push(new Date(year, month - 1, prevMonth.getDate() - i))
+  }
+  // Current month days
+  while (date.getMonth() === month) {
+    days.push(new Date(date))
+    date.setDate(date.getDate() + 1)
+  }
+  // Next month days to fill the last week
+  const lastDay = days[days.length - 1]
+  const lastDayOfWeek = (lastDay.getDay() + 6) % 7
+  for (let i = 1; i < 7 - lastDayOfWeek; i++) {
+    days.push(new Date(year, month + 1, i))
+  }
+  return days
+}
+
 // ─── Event Popup ──────────────────────────────────────────────────────────────
 
 type EventPopupProps = {
@@ -236,11 +259,22 @@ function WeekView({
   onDropTask,
   onToggleTasks,
 }: WeekViewProps & { onToggleTasks?: () => void }) {
+  const scrollRef = useRef<HTMLDivElement>(null)
   const dragStart = useRef<{ day: Date; hour: number } | null>(null)
   const [dragRange, setDragRange] = useState<{ day: Date; startHour: number; endHour: number } | null>(null)
   const [dragOverCol, setDragOverCol] = useState<string | null>(null)
 
   const today = new Date()
+
+  useEffect(() => {
+    if (scrollRef.current) {
+      const now = new Date()
+      const currentHour = now.getHours()
+      if (currentHour >= START_HOUR && currentHour < END_HOUR) {
+        scrollRef.current.scrollTop = (currentHour - START_HOUR) * HOUR_HEIGHT - 100
+      }
+    }
+  }, [])
 
   function getHourFromY(el: HTMLElement, clientY: number): number {
     const rect = el.getBoundingClientRect()
@@ -365,7 +399,7 @@ function WeekView({
       </div>
 
       {/* Time grid */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" ref={scrollRef}>
         <div
           className="grid relative"
           style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}
@@ -465,6 +499,171 @@ function WeekView({
   )
 }
 
+// ─── Day View ─────────────────────────────────────────────────────────────────
+
+type DayViewProps = {
+  date: Date
+  events: UserEvent[]
+  tasks: Task[]
+  calendars: UserCalendar[]
+  visibleCalendarIds: string[]
+  onCreateEvent: (popup: PopupData) => void
+  onDropTask: (taskId: string, date: Date, hour: number) => void
+}
+
+function DayView({
+  date,
+  events,
+  tasks,
+  calendars,
+  visibleCalendarIds,
+  onCreateEvent,
+  onDropTask,
+}: DayViewProps) {
+  return (
+    <WeekView
+      weekDays={[date]}
+      events={events}
+      tasks={tasks}
+      calendars={calendars}
+      visibleCalendarIds={visibleCalendarIds}
+      onCreateEvent={onCreateEvent}
+      onDropTask={onDropTask}
+    />
+  )
+}
+
+// ─── Month View ───────────────────────────────────────────────────────────────
+
+type MonthViewProps = {
+  currentDate: Date
+  events: UserEvent[]
+  tasks: Task[]
+  calendars: UserCalendar[]
+  visibleCalendarIds: string[]
+  onSelectDate: (date: Date) => void
+}
+
+function MonthView({ currentDate, events, tasks, calendars, visibleCalendarIds, onSelectDate }: MonthViewProps) {
+  const days = getMonthDays(currentDate.getFullYear(), currentDate.getMonth())
+  const today = new Date()
+
+  function getEventsForDay(day: Date) {
+    return events.filter(ev =>
+      visibleCalendarIds.includes(ev.calendarId) &&
+      isSameDay(new Date(ev.startDate), day)
+    )
+  }
+
+  function getTasksForDay(day: Date) {
+    return tasks.filter(t => t.dueDate && isSameDay(new Date(t.dueDate), day))
+  }
+
+  function getCalendarColor(calendarId: string) {
+    return calendars.find(c => c.id === calendarId)?.color ?? 'blue'
+  }
+
+  return (
+    <div className="flex flex-col flex-1 bg-white overflow-hidden">
+      <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/50">
+        {['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map(d => (
+          <div key={d} className="py-2 text-center text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+            {d}
+          </div>
+        ))}
+      </div>
+      <div className="flex-1 grid grid-cols-7 auto-rows-fr">
+        {days.map((day, i) => {
+          const isCurrentMonth = day.getMonth() === currentDate.getMonth()
+          const dayEvents = getEventsForDay(day)
+          const dayTasks = getTasksForDay(day)
+          const isToday = isSameDay(day, today)
+
+          return (
+            <div
+              key={i}
+              onClick={() => onSelectDate(day)}
+              className={`border-r border-b border-slate-100 p-1.5 flex flex-col gap-1 min-h-0 cursor-pointer hover:bg-slate-50 transition-colors ${
+                !isCurrentMonth ? 'bg-slate-50/30' : ''
+              }`}
+            >
+              <div className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-lg mb-1 ${
+                isToday ? 'bg-blue-600 text-white shadow-xs' : isCurrentMonth ? 'text-slate-700' : 'text-slate-300'
+              }`}>
+                {day.getDate()}
+              </div>
+              <div className="flex-1 overflow-y-auto custom-scrollbar flex flex-col gap-0.5">
+                {dayEvents.map(event => (
+                  <div
+                    key={event.id}
+                    className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md truncate border-l-2 ${COLOR_EVENT[getCalendarColor(event.calendarId)]}`}
+                  >
+                    {event.title}
+                  </div>
+                ))}
+                {dayTasks.map(task => (
+                  <div
+                    key={task.id}
+                    className="text-[9px] font-bold px-1.5 py-0.5 rounded-md truncate bg-slate-100 text-slate-600 border-l-2 border-slate-400"
+                  >
+                    {task.title}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+// ─── Year View ────────────────────────────────────────────────────────────────
+
+type YearViewProps = {
+  currentDate: Date
+  onSelectMonth: (date: Date) => void
+}
+
+function YearView({ currentDate, onSelectMonth }: YearViewProps) {
+  const year = currentDate.getFullYear()
+  const months = Array.from({ length: 12 }, (_, i) => new Date(year, i, 1))
+
+  return (
+    <div className="flex-1 overflow-y-auto bg-white p-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 max-w-7xl mx-auto">
+        {months.map((monthDate, i) => {
+          const days = getMonthDays(year, i)
+          return (
+            <div
+              key={i}
+              onClick={() => onSelectMonth(monthDate)}
+              className="p-4 rounded-2xl hover:bg-slate-50 cursor-pointer transition-all border border-transparent hover:border-slate-100"
+            >
+              <h3 className="text-sm font-extrabold text-slate-800 mb-4 px-1">{monthDate.toLocaleDateString('default', { month: 'long' })}</h3>
+              <div className="grid grid-cols-7 gap-y-2">
+                {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, idx) => (
+                  <div key={idx} className="text-[8px] font-bold text-slate-300 text-center">{d}</div>
+                ))}
+                {days.map((day, idx) => (
+                  <div
+                    key={idx}
+                    className={`text-[9px] font-bold text-center py-1 ${
+                      day.getMonth() === i ? 'text-slate-600' : 'text-slate-200'
+                    } ${isSameDay(day, new Date()) ? 'text-blue-600 font-black' : ''}`}
+                  >
+                    {day.getDate()}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
 // ─── Calendar ─────────────────────────────────────────────────────────────────
 
 function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalendarIds, onToggleTasks, isTasksOpen }: Props) {
@@ -486,9 +685,18 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
 
   const weekDays = getWeekDays(currentDate)
 
-  const weekLabel = `${weekDays[0].toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${
-    weekDays[6].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-  }`
+  let titleLabel = ""
+  if (view === 'day') {
+    titleLabel = currentDate.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
+  } else if (view === 'week') {
+    titleLabel = `${weekDays[0].toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })} – ${
+      weekDays[6].toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    }`
+  } else if (view === 'month') {
+    titleLabel = currentDate.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })
+  } else if (view === 'year') {
+    titleLabel = currentDate.getFullYear().toString()
+  }
 
   function navigate(dir: -1 | 1) {
     const d = new Date(currentDate)
@@ -535,7 +743,7 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
         </div>
 
         {/* Date Title */}
-        <span className="text-sm font-extrabold text-slate-900 flex-1 ml-2 md:text-base leading-none">{weekLabel}</span>
+        <span className="text-sm font-extrabold text-slate-900 flex-1 ml-2 md:text-base leading-none">{titleLabel}</span>
 
         {/* View switcher */}
         <div className="flex bg-slate-100 p-1 rounded-xl shrink-0">
@@ -570,27 +778,36 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
         )}
       </div>
 
-      {/* Week view */}
-      {view === 'week' && (
-        <>
-          {!ready ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-8">
-              <div className="animate-pulse w-full max-w-4xl">
-                <div className="h-6 bg-slate-100 rounded mb-4" />
-                <div className="grid grid-cols-8 gap-2">
-                  <div className="col-span-1">
-                    <div className="h-40 bg-slate-100 rounded" />
-                  </div>
-                  <div className="col-span-7 space-y-2">
-                    <div className="h-8 bg-slate-100 rounded" />
-                    <div className="h-8 bg-slate-100 rounded" />
-                    <div className="h-8 bg-slate-100 rounded" />
-                  </div>
+      {!ready ? (
+        <div className="flex-1 flex flex-col items-center justify-center p-8 bg-slate-50/30">
+          <div className="animate-pulse w-full max-w-4xl">
+            <div className="h-8 bg-slate-200/50 rounded-xl mb-6 w-1/3" />
+            <div className="grid grid-cols-7 gap-4">
+              {Array.from({ length: 7 }).map((_, i) => (
+                <div key={i} className="space-y-3">
+                  <div className="h-24 bg-slate-200/50 rounded-2xl" />
+                  <div className="h-4 bg-slate-200/30 rounded-lg w-3/4" />
+                  <div className="h-4 bg-slate-200/30 rounded-lg" />
                 </div>
-              </div>
-              <p className="text-xs text-slate-400 mt-4">Loading calendar…</p>
+              ))}
             </div>
-          ) : (
+          </div>
+          <p className="text-xs font-bold text-slate-400 mt-8 uppercase tracking-widest animate-pulse">Initializing Views...</p>
+        </div>
+      ) : (
+        <div className="flex-1 flex flex-col overflow-hidden">
+          {view === 'day' && (
+            <DayView
+              date={currentDate}
+              events={events}
+              tasks={tasks}
+              calendars={calendars}
+              visibleCalendarIds={visibleCalendarIds}
+              onCreateEvent={setPopup}
+              onDropTask={handleDropTask}
+            />
+          )}
+          {view === 'week' && (
             <WeekView
               weekDays={weekDays}
               events={events}
@@ -602,15 +819,22 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
               onToggleTasks={onToggleTasks}
             />
           )}
-        </>
-      )}
-
-      {/* Placeholder views */}
-      {(view === 'day' || view === 'month' || view === 'year') && (
-        <div className="flex-1 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 p-6">
-          <CalendarDays size={40} strokeWidth={1.5} className="text-slate-300 animate-bounce" />
-          <p className="font-extrabold text-slate-800 text-sm mt-3">{view.charAt(0).toUpperCase() + view.slice(1)} View is in Development</p>
-          <p className="text-slate-400 text-xs mt-1 text-center max-w-xs">Our team is working on this section. Switch to Week View for a fully interactive schedule.</p>
+          {view === 'month' && (
+            <MonthView
+              currentDate={currentDate}
+              events={events}
+              tasks={tasks}
+              calendars={calendars}
+              visibleCalendarIds={visibleCalendarIds}
+              onSelectDate={(d) => { setCurrentDate(d); setView('day') }}
+            />
+          )}
+          {view === 'year' && (
+            <YearView
+              currentDate={currentDate}
+              onSelectMonth={(d) => { setCurrentDate(d); setView('month') }}
+            />
+          )}
         </div>
       )}
 
