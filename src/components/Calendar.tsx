@@ -352,7 +352,7 @@ function WeekView({
 
       {/* Day headers */}
       <div
-        className="grid border-b border-slate-200 shrink-0 bg-white"
+        className="calendar-week-columns grid border-b border-slate-200 shrink-0 bg-white"
         style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}
       >
         <div className="border-r border-slate-100/30" />
@@ -374,7 +374,7 @@ function WeekView({
 
       {/* All-day tasks row */}
       <div
-        className="grid border-b border-slate-200 shrink-0 bg-slate-50"
+        className="calendar-week-columns grid border-b border-slate-200 shrink-0 bg-slate-50"
         style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}
       >
         <div className="border-r border-slate-100/30 flex items-center justify-end pr-2.5 py-1.5">
@@ -399,7 +399,7 @@ function WeekView({
       </div>
 
       {/* Time grid */}
-      <div className="flex-1 overflow-y-auto" ref={scrollRef}>
+      <div className="calendar-week-scroll flex-1 overflow-y-scroll" ref={scrollRef}>
         <div
           className="grid relative"
           style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}

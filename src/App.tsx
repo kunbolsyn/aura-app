@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Menu, ListTodo } from "lucide-react";
+import { Menu, ListTodo, Moon, LogIn } from "lucide-react";
 import type { Task, TaskList, UserCalendar, UserEvent } from "./types";
 import Sidebar from "./components/Sidebar";
 import Tasks from "./components/Tasks";
@@ -31,6 +31,8 @@ function load<T>(key: string, fallback: T): T {
 // ─── App ──────────────────────────────────────────────────────────────────────
 
 function App() {
+  const [isDarkMode, setIsDarkMode] = useState(() => load('aura-dark-mode', false))
+  const [isSignedOut, setIsSignedOut] = useState(false)
   const [activeListId, setActiveListId] = useState<string>('personal')
   const [visibleCalendarIds, setVisibleCalendarIds] = useState<string[]>(
     DEFAULT_CALENDARS.map(c => c.id)
@@ -51,6 +53,15 @@ function App() {
   useEffect(() => { localStorage.setItem('aura-lists',     JSON.stringify(lists))     }, [lists])
   useEffect(() => { localStorage.setItem('aura-calendars', JSON.stringify(calendars)) }, [calendars])
   useEffect(() => { localStorage.setItem('aura-events',    JSON.stringify(events))    }, [events])
+  useEffect(() => {
+    document.documentElement.classList.toggle('aura-dark', isDarkMode)
+    localStorage.setItem('aura-dark-mode', JSON.stringify(isDarkMode))
+  }, [isDarkMode])
+
+  function handleLogout() {
+    setIsSignedOut(true)
+    setIsSidebarOpen(false)
+  }
 
   function toggleCalendarVisibility(id: string) {
     setVisibleCalendarIds(prev =>
@@ -103,6 +114,27 @@ function App() {
     setCalendars(prev => prev.map(c => c.id === id ? { ...c, name: name.trim(), color } : c))
   }
 
+  if (isSignedOut) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-slate-50 px-6 text-slate-800">
+        <div className="w-full max-w-sm text-center">
+          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
+            <Moon size={22} strokeWidth={2.5} />
+          </div>
+          <h1 className="text-xl font-extrabold text-slate-900">You are signed out</h1>
+          <p className="mt-2 text-sm text-slate-500">Your local Aura workspace is still saved on this device.</p>
+          <button
+            onClick={() => setIsSignedOut(false)}
+            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-600/20 transition-colors hover:bg-blue-700"
+          >
+            <LogIn size={15} strokeWidth={2.5} />
+            Continue as guest
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="flex flex-col lg:flex-row h-screen bg-slate-50 text-slate-800 overflow-hidden font-sans">
       
@@ -149,6 +181,9 @@ function App() {
           onAddCalendar={addCalendar}
           onDeleteCalendar={deleteCalendar}
           onUpdateCalendar={updateCalendar}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
+          onLogout={handleLogout}
         />
       </div>
 

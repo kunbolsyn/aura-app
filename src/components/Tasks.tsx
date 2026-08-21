@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { CalendarDays, Repeat, Plus, Check, Trash2, X, Edit3, MoreVertical, Clock, ChevronLeft, ChevronRight } from "lucide-react";
+import { Repeat, Plus, Check, Trash2, X, Edit3, MoreVertical, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Task, TaskList, RecurrenceType } from "../types";
 
 type Props = {
@@ -494,7 +494,7 @@ export default function Tasks({ tasks, setTasks, lists, activeListId, onListSele
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addTask()}
                 placeholder="Add a task..."
-                className="flex-1 min-w-0 text-sm font-semibold text-slate-800 placeholder:text-slate-400 bg-transparent outline-none"
+                className="flex-1 min-w-0 appearance-none bg-transparent text-sm font-semibold text-slate-800 placeholder:text-slate-400 outline-none"
               />
             </div>
 

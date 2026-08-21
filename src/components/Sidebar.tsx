@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { CalendarDays, Settings, Plus, ChevronLeft, ChevronRight, Check, Edit3, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { CalendarDays, Settings, Plus, ChevronLeft, ChevronRight, Check, Edit3, Trash2, Moon, LogOut } from "lucide-react";
 import type { UserCalendar, CalendarColor } from "../types";
 
 type SidebarProps = {
@@ -9,6 +9,9 @@ type SidebarProps = {
   onAddCalendar: (name: string, color: UserCalendar['color']) => void;
   onDeleteCalendar: (id: string) => void;
   onUpdateCalendar: (id: string, name: string, color: UserCalendar['color']) => void;
+  isDarkMode: boolean;
+  onToggleDarkMode: () => void;
+  onLogout: () => void;
 }
 
 const CALENDAR_COLORS: CalendarColor[] = [
@@ -109,6 +112,9 @@ function Sidebar({
   onAddCalendar,
   onDeleteCalendar,
   onUpdateCalendar,
+  isDarkMode,
+  onToggleDarkMode,
+  onLogout,
 }: SidebarProps) {
   // Inline editing calendars
   const [editingCalId, setEditingCalId]     = useState<string | null>(null)
@@ -118,6 +124,24 @@ function Sidebar({
   const [addingCalendar, setAddingCalendar] = useState(false)
   const [newCalName, setNewCalName]         = useState('')
   const [newCalColor, setNewCalColor]       = useState<UserCalendar['color']>('blue')
+  const [settingsOpen, setSettingsOpen]     = useState(false)
+  const settingsRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function closeSettings(event: MouseEvent) {
+      if (!settingsRef.current?.contains(event.target as Node)) setSettingsOpen(false)
+    }
+    document.addEventListener('mousedown', closeSettings)
+    return () => document.removeEventListener('mousedown', closeSettings)
+  }, [])
+
+  useEffect(() => {
+    function closeOnEscape(event: KeyboardEvent) {
+      if (event.key === 'Escape') setSettingsOpen(false)
+    }
+    document.addEventListener('keydown', closeOnEscape)
+    return () => document.removeEventListener('keydown', closeOnEscape)
+  }, [])
 
   function submitCalendar() {
     if (newCalName.trim()) onAddCalendar(newCalName.trim(), newCalColor)
@@ -297,8 +321,38 @@ function Sidebar({
       </div>
 
       {/* Settings */}
-      <div className="mt-auto px-4 pt-4">
-        <button className="flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-extrabold text-slate-400 uppercase tracking-widest hover:text-slate-800 hover:bg-slate-200/50 transition-all w-full">
+      <div className="mt-auto px-4 pt-4 relative" ref={settingsRef}>
+        {settingsOpen && (
+          <div className="absolute bottom-full left-4 right-4 mb-2 z-50 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150">
+            <div className="px-3 py-2.5 border-b border-slate-100 mb-1">
+              <p className="text-xs font-extrabold text-slate-800">Your account</p>
+              <p className="text-[11px] text-slate-400 mt-0.5">Local workspace</p>
+            </div>
+            <button
+              onClick={onToggleDarkMode}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"
+            >
+              <Moon size={15} className="text-slate-500" strokeWidth={2.5} />
+              <span className="flex-1 text-left">Dark mode</span>
+              <span className={`w-8 h-4 rounded-full p-0.5 transition-colors ${isDarkMode ? 'bg-blue-600' : 'bg-slate-200'}`}>
+                <span className={`block w-3 h-3 rounded-full bg-white transition-transform ${isDarkMode ? 'translate-x-4' : ''}`} />
+              </span>
+            </button>
+            <button
+              onClick={() => { setSettingsOpen(false); onLogout() }}
+              className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors"
+            >
+              <LogOut size={15} strokeWidth={2.5} />
+              Sign out
+            </button>
+          </div>
+        )}
+        <button
+          onClick={() => setSettingsOpen(prev => !prev)}
+          aria-expanded={settingsOpen}
+          aria-haspopup="menu"
+          className={`flex items-center gap-2 px-3 py-2.5 rounded-xl text-xs font-extrabold uppercase tracking-widest transition-all w-full ${settingsOpen ? 'text-slate-800 bg-slate-200/60' : 'text-slate-400 hover:text-slate-800 hover:bg-slate-200/50'}`}
+        >
           <Settings size={13} strokeWidth={2.5} />
           Settings
         </button>
