@@ -1,20 +1,24 @@
 import { useState, useEffect } from "react";
-import { Menu, ListTodo, Moon, LogIn } from "lucide-react";
+import { Menu, ListTodo } from "lucide-react";
+import type { User } from "@supabase/supabase-js";
 import type { Task, TaskList, UserCalendar, UserEvent } from "./types";
 import Sidebar from "./components/Sidebar";
 import Tasks from "./components/Tasks";
 import Calendar from "./components/Calendar";
+import AuthPage from "./components/AuthPage";
+import { loadWorkspace, saveWorkspace } from "./lib/workspace";
+import { requireSupabase, supabase } from "./lib/supabase";
 
 // ─── Defaults ─────────────────────────────────────────────────────────────────
 
 const DEFAULT_LISTS: TaskList[] = [
-  { id: "personal", name: "Personal" },
-  { id: "work",     name: "Work"     },
+  { id: crypto.randomUUID(), name: "Personal" },
+  { id: crypto.randomUUID(), name: "Work"     },
 ]
 
 const DEFAULT_CALENDARS: UserCalendar[] = [
-  { id: "personal", name: "Personal", color: "green" },
-  { id: "work",     name: "Work",     color: "blue"  },
+  { id: crypto.randomUUID(), name: "Personal", color: "green" },
+  { id: crypto.randomUUID(), name: "Work",     color: "blue"  },
 ]
 
 // ─── localStorage helpers ─────────────────────────────────────────────────────
@@ -32,35 +36,113 @@ function load<T>(key: string, fallback: T): T {
 
 function App() {
   const [isDarkMode, setIsDarkMode] = useState(() => load('aura-dark-mode', false))
-  const [isSignedOut, setIsSignedOut] = useState(false)
-  const [activeListId, setActiveListId] = useState<string>('personal')
-  const [visibleCalendarIds, setVisibleCalendarIds] = useState<string[]>(
-    DEFAULT_CALENDARS.map(c => c.id)
-  )
+  const [user, setUser] = useState<User | null>(null)
+  const [authReady, setAuthReady] = useState(false)
+  const [workspaceReady, setWorkspaceReady] = useState(false)
+  const [workspaceLoadedFor, setWorkspaceLoadedFor] = useState<string | null>(null)
+  const [authError, setAuthError] = useState<string | null>(null)
+  const [activeListId, setActiveListId] = useState<string>(DEFAULT_LISTS[0].id)
+  const [visibleCalendarIds, setVisibleCalendarIds] = useState<string[]>(DEFAULT_CALENDARS.map(c => c.id))
 
   // Drawer states for responsiveness (Tasks sidebar is initially closed on mobile, open on desktop)
   const [isSidebarOpen, setIsSidebarOpen] = useState(false)
   const [isTasksOpen, setIsTasksOpen] = useState(true) // starts open on desktop
 
   // persisted state — all loaded from localStorage on first render
-  const [tasks, setTasks]       = useState<Task[]>      (() => load('aura-tasks',     []))
-  const [lists, setLists]       = useState<TaskList[]>  (() => load('aura-lists',     DEFAULT_LISTS))
-  const [calendars, setCalendars] = useState<UserCalendar[]>(() => load('aura-calendars', DEFAULT_CALENDARS))
-  const [events, setEvents]     = useState<UserEvent[]> (() => load('aura-events',    []))
+  const [tasks, setTasks]       = useState<Task[]>([])
+  const [lists, setLists]       = useState<TaskList[]>(DEFAULT_LISTS)
+  const [calendars, setCalendars] = useState<UserCalendar[]>(DEFAULT_CALENDARS)
+  const [events, setEvents]     = useState<UserEvent[]>([])
 
-  // persist to localStorage whenever state changes
-  useEffect(() => { localStorage.setItem('aura-tasks',     JSON.stringify(tasks))     }, [tasks])
-  useEffect(() => { localStorage.setItem('aura-lists',     JSON.stringify(lists))     }, [lists])
-  useEffect(() => { localStorage.setItem('aura-calendars', JSON.stringify(calendars)) }, [calendars])
-  useEffect(() => { localStorage.setItem('aura-events',    JSON.stringify(events))    }, [events])
+  useEffect(() => {
+    let mounted = true
+    const client = supabase
+    if (!client) {
+      window.setTimeout(() => setAuthReady(true), 0)
+      return () => { mounted = false }
+    }
+    const configuredClient = requireSupabase()
+
+    async function restoreSession() {
+      const { data, error } = await configuredClient.auth.getSession()
+      if (!mounted) return
+      if (error) setAuthError(error.message)
+      setUser(data.session?.user ?? null)
+      setAuthReady(true)
+    }
+
+    void restoreSession()
+    const { data: listener } = configuredClient.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return
+      setUser(session?.user ?? null)
+      setAuthError(null)
+      setWorkspaceReady(false)
+      setWorkspaceLoadedFor(null)
+    })
+    return () => {
+      mounted = false
+      listener.subscription.unsubscribe()
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!user || !supabase) return
+    let mounted = true
+    void loadWorkspace()
+      .then(workspace => {
+        if (!mounted) return
+        const nextLists = workspace.lists.length ? workspace.lists : DEFAULT_LISTS
+        const nextCalendars = workspace.calendars.length ? workspace.calendars : DEFAULT_CALENDARS
+        setTasks(workspace.tasks)
+        setLists(nextLists)
+        setCalendars(nextCalendars)
+        setEvents(workspace.events)
+        setActiveListId(nextLists[0].id)
+        setVisibleCalendarIds(nextCalendars.map(calendar => calendar.id))
+        setWorkspaceLoadedFor(user.id)
+        setWorkspaceReady(true)
+      })
+      .catch(error => { if (mounted) setAuthError(error instanceof Error ? error.message : "Unable to load your workspace.") })
+    return () => { mounted = false }
+  }, [user])
+
+  useEffect(() => {
+    if (!user || !workspaceReady || workspaceLoadedFor !== user.id) return
+    const timeout = window.setTimeout(() => {
+      void saveWorkspace({ tasks, lists, calendars, events }).catch(error => {
+        setAuthError(error instanceof Error ? error.message : "Unable to save your workspace.")
+      })
+    }, 300)
+    return () => window.clearTimeout(timeout)
+  }, [user, workspaceReady, workspaceLoadedFor, tasks, lists, calendars, events])
+
   useEffect(() => {
     document.documentElement.classList.toggle('aura-dark', isDarkMode)
     localStorage.setItem('aura-dark-mode', JSON.stringify(isDarkMode))
   }, [isDarkMode])
 
-  function handleLogout() {
-    setIsSignedOut(true)
+  async function handleLogout() {
+    if (supabase) await supabase.auth.signOut()
+    setUser(null)
+    setWorkspaceReady(false)
+    setWorkspaceLoadedFor(null)
     setIsSidebarOpen(false)
+  }
+
+  async function handleAuthSubmit(credentials: { email: string; password: string; mode: "sign-in" | "sign-up" }) {
+    const client = requireSupabase()
+    const result = credentials.mode === "sign-up"
+      ? await client.auth.signUp({ email: credentials.email, password: credentials.password })
+      : await client.auth.signInWithPassword({ email: credentials.email, password: credentials.password })
+    if (result.error) throw result.error
+  }
+
+  async function handleGoogleAuth() {
+    const { error } = await requireSupabase().auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo: window.location.origin },
+    })
+    if (error) throw error
   }
 
   function toggleCalendarVisibility(id: string) {
@@ -114,25 +196,12 @@ function App() {
     setCalendars(prev => prev.map(c => c.id === id ? { ...c, name: name.trim(), color } : c))
   }
 
-  if (isSignedOut) {
-    return (
-      <div className="flex h-screen items-center justify-center bg-slate-50 px-6 text-slate-800">
-        <div className="w-full max-w-sm text-center">
-          <div className="mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-            <Moon size={22} strokeWidth={2.5} />
-          </div>
-          <h1 className="text-xl font-extrabold text-slate-900">You are signed out</h1>
-          <p className="mt-2 text-sm text-slate-500">Your local Aura workspace is still saved on this device.</p>
-          <button
-            onClick={() => setIsSignedOut(false)}
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white shadow-sm shadow-blue-600/20 transition-colors hover:bg-blue-700"
-          >
-            <LogIn size={15} strokeWidth={2.5} />
-            Continue as guest
-          </button>
-        </div>
-      </div>
-    )
+  if (!authReady || (user && !workspaceReady)) {
+    return <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm font-semibold text-slate-400">Loading your Aura space...</div>
+  }
+
+  if (!user) {
+    return <AuthPage onSubmit={handleAuthSubmit} onGoogleAuth={handleGoogleAuth} error={authError} />
   }
 
   return (
