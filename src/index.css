@@ -106,3 +106,148 @@ body {
 .aura-dark .bg-amber-50.border-amber-500.text-amber-800:hover { background-color: #f59e0b; }
 .aura-dark .bg-violet-50.border-violet-500.text-violet-800:hover { background-color: #8b5cf6; }
 .aura-dark .bg-cyan-50.border-cyan-500.text-cyan-800:hover { background-color: #06b6d4; }
+
+/* Material-inspired dark theme: charcoal surfaces, strong text hierarchy, and
+   explicit interactive states so light utility colors do not leak through. */
+.aura-dark body {
+  background: #202124;
+  color: #e8eaed;
+}
+
+.aura-dark .aura-app,
+.aura-dark .aura-app .bg-slate-50 { background-color: #202124; color: #e8eaed; }
+.aura-dark .aura-app .bg-white { background-color: #292a2d; }
+.aura-dark .aura-app .bg-slate-100,
+.aura-dark .aura-app .bg-slate-100\/50 { background-color: #303134; }
+.aura-dark .aura-app .bg-slate-50\/50 { background-color: rgb(48 49 52 / 0.72); }
+
+.aura-dark .aura-app .text-slate-950,
+.aura-dark .aura-app .text-slate-900,
+.aura-dark .aura-app .text-slate-800 { color: #f1f3f4; }
+.aura-dark .aura-app .text-slate-700 { color: #dadce0; }
+.aura-dark .aura-app .text-slate-600 { color: #bdc1c6; }
+.aura-dark .aura-app .text-slate-500 { color: #9aa0a6; }
+.aura-dark .aura-app .text-slate-400 { color: #9aa0a6; }
+.aura-dark .aura-app .text-slate-300 { color: #6f7378; }
+
+.aura-dark .aura-app .border-slate-200,
+.aura-dark .aura-app .border-slate-200\/80,
+.aura-dark .aura-app .border-slate-100,
+.aura-dark .aura-app .border-slate-200\/40 { border-color: #45464a; }
+.aura-dark .aura-app .hover\:bg-slate-50:hover { background-color: #35363a; }
+.aura-dark .aura-app .hover\:bg-slate-100:hover,
+.aura-dark .aura-app .hover\:bg-slate-200:hover,
+.aura-dark .aura-app .hover\:bg-slate-200\/50:hover { background-color: #3c4043; }
+.aura-dark .aura-app .hover\:bg-white:hover { background-color: #3c4043; }
+.aura-dark .aura-app .hover\:text-slate-800:hover,
+.aura-dark .aura-app .hover\:text-slate-900:hover { color: #ffffff; }
+
+.aura-dark .aura-app input,
+.aura-dark .aura-app textarea,
+.aura-dark .aura-app select {
+  color: #f1f3f4;
+  background-color: #303134;
+  border-color: #5f6368;
+}
+.aura-dark .aura-app input::placeholder,
+.aura-dark .aura-app textarea::placeholder { color: #9aa0a6; }
+.aura-dark .aura-app .task-add-input { background-color: transparent; border-color: transparent; }
+.aura-dark .aura-app input:focus,
+.aura-dark .aura-app textarea:focus,
+.aura-dark .aura-app select:focus { border-color: #8ab4f8; box-shadow: 0 0 0 3px rgb(138 180 248 / 0.18); }
+
+.aura-dark .aura-app .bg-blue-50,
+.aura-dark .aura-app .bg-emerald-50,
+.aura-dark .aura-app .bg-rose-50,
+.aura-dark .aura-app .bg-amber-50,
+.aura-dark .aura-app .bg-violet-50,
+.aura-dark .aura-app .bg-cyan-50 { background-color: #303134; }
+.aura-dark .aura-app .bg-blue-50.text-blue-700,
+.aura-dark .aura-app .bg-blue-50.text-blue-600 { background-color: #174ea6; color: #d2e3fc; }
+.aura-dark .aura-app .hover\:bg-blue-50:hover { background-color: #174ea6; color: #ffffff; }
+.aura-dark .aura-app .hover\:bg-blue-100\/70:hover { background-color: #174ea6; }
+.aura-dark .aura-app .hover\:bg-blue-700:hover { background-color: #8ab4f8; color: #202124; }
+.aura-dark .aura-app .hover\:bg-rose-50:hover { background-color: #4a2529; color: #f28b82; }
+.aura-dark .aura-app .hover\:bg-rose-500:hover { background-color: #a33b45; color: #ffffff; }
+
+.aura-dark .aura-app .shadow-xl,
+.aura-dark .aura-app .shadow-2xl,
+.aura-dark .aura-app .shadow-lg { --tw-shadow-color: rgb(0 0 0 / 0.42); }
+.aura-dark .aura-app .ring-white { --tw-ring-color: #292a2d; }
+
+.aura-dark .aura-auth-shell { background-color: #202124; color: #e8eaed; }
+.aura-dark .aura-auth-brand-panel { background-color: #0f3d3a; }
+.aura-dark .aura-auth-form-panel { background-color: #202124; }
+.aura-dark .aura-auth-shell .text-slate-950,
+.aura-dark .aura-auth-shell .text-slate-900,
+.aura-dark .aura-auth-shell .text-slate-800,
+.aura-dark .aura-auth-shell .text-slate-700 { color: #f1f3f4; }
+.aura-dark .aura-auth-shell .text-slate-500,
+.aura-dark .aura-auth-shell .text-slate-400 { color: #bdc1c6; }
+.aura-dark .aura-auth-shell .bg-white,
+.aura-dark .aura-auth-shell .bg-slate-200\/70 { background-color: #292a2d; }
+.aura-dark .aura-auth-shell .border-slate-200 { border-color: #5f6368; }
+.aura-dark .aura-auth-shell .hover\:bg-slate-50:hover { background-color: #3c4043; }
+.aura-dark .aura-auth-shell .bg-emerald-50 { background-color: #123b2a; }
+.aura-dark .aura-auth-shell .text-emerald-700 { color: #81c995; }
+.aura-dark .aura-auth-shell .bg-rose-50 { background-color: #4a1f24; }
+.aura-dark .aura-auth-shell .text-rose-700 { color: #f28b82; }
+
+/* Keep calendar geometry and scrollbar treatment quiet and consistent. */
+.calendar-week-columns,
+.calendar-week > .calendar-week-scroll > div {
+  box-sizing: border-box;
+}
+
+.calendar-week {
+  --calendar-scrollbar-width: 8px;
+    --calendar-scrollbar-width: 0px;
+}
+.calendar-week-columns {
+  width: calc(100% - var(--calendar-scrollbar-width));
+  padding-right: 0;
+}
+.calendar-week-scroll {
+  scrollbar-gutter: stable;
+}
+.calendar-week-scroll > div {
+  width: 100%;
+}
+
+.calendar-week-scroll {
+  scrollbar-color: #9aa0a6 #e8eaed;
+}
+.calendar-week-scroll::-webkit-scrollbar,
+.custom-scrollbar::-webkit-scrollbar { width: var(--calendar-scrollbar-width, 8px); height: 8px; }
+.calendar-week-scroll::-webkit-scrollbar-track,
+.custom-scrollbar::-webkit-scrollbar-track { background: #e8eaed; }
+.calendar-week-scroll::-webkit-scrollbar-thumb,
+.custom-scrollbar::-webkit-scrollbar-thumb { background: #9aa0a6; border: 2px solid #e8eaed; border-radius: 8px; }
+.calendar-week-scroll::-webkit-scrollbar-thumb:hover,
+.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6f7378; }
+
+.calendar-hour-line { border-color: rgb(95 99 104 / 0.16); }
+.calendar-half-hour-line { border-color: rgb(95 99 104 / 0.08); }
+
+.aura-dark .calendar-week-scroll { scrollbar-color: #6f7378 #303134; }
+.aura-dark .calendar-week-scroll::-webkit-scrollbar-track,
+.aura-dark .custom-scrollbar::-webkit-scrollbar-track { background: #303134; }
+.aura-dark .calendar-week-scroll::-webkit-scrollbar-thumb,
+.aura-dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #6f7378; border-color: #303134; }
+.aura-dark .calendar-week-scroll::-webkit-scrollbar-thumb:hover,
+.aura-dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9aa0a6; }
+.aura-dark .calendar-hour-line { border-color: rgb(218 220 224 / 0.14); }
+.aura-dark .calendar-half-hour-line { border-color: rgb(218 220 224 / 0.07); }
+
+.tasks-scroll {
+  scrollbar-color: #9aa0a6 #e8eaed;
+  scrollbar-width: thin;
+}
+.tasks-scroll::-webkit-scrollbar { width: 8px; }
+.tasks-scroll::-webkit-scrollbar-track { background: #e8eaed; }
+.tasks-scroll::-webkit-scrollbar-thumb { background: #9aa0a6; border: 2px solid #e8eaed; border-radius: 8px; }
+.tasks-scroll::-webkit-scrollbar-thumb:hover { background: #6f7378; }
+.aura-dark .tasks-scroll { scrollbar-color: #6f7378 #303134; }
+.aura-dark .tasks-scroll::-webkit-scrollbar-track { background: #303134; }
+.aura-dark .tasks-scroll::-webkit-scrollbar-thumb { background: #6f7378; border-color: #303134; }
+.aura-dark .tasks-scroll::-webkit-scrollbar-thumb:hover { background: #9aa0a6; }

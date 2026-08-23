@@ -27,8 +27,8 @@ type Props = {
 type PopupData = {
   startDate: string
   endDate: string
-  x: number
-  y: number
+  x?: number
+  y?: number
 }
 
 // ─── Color maps ───────────────────────────────────────────────────────────────
@@ -110,22 +110,24 @@ function getMonthDays(year: number, month: number): Date[] {
 type EventPopupProps = {
   data: PopupData
   calendars: UserCalendar[]
+  event?: UserEvent
   onSave: (event: UserEvent) => void
+  onDelete?: (eventId: string) => void
   onClose: () => void
 }
 
-function EventPopup({ data, calendars, onSave, onClose }: EventPopupProps) {
-  const [title, setTitle]         = useState('')
-  const [calendarId, setCalendarId] = useState(calendars[0]?.id ?? '')
-  const [startDate, setStartDate] = useState(data.startDate)
-  const [endDate, setEndDate]     = useState(data.endDate)
-  const [location, setLocation]   = useState('')
-  const [description, setDescription] = useState('')
+function EventPopup({ data, calendars, event, onSave, onDelete, onClose }: EventPopupProps) {
+  const [title, setTitle]         = useState(event?.title ?? '')
+  const [calendarId, setCalendarId] = useState(event?.calendarId ?? calendars[0]?.id ?? '')
+  const [startDate, setStartDate] = useState(event?.startDate ?? data.startDate)
+  const [endDate, setEndDate]     = useState(event?.endDate ?? data.endDate)
+  const [location, setLocation]   = useState(event?.location ?? '')
+  const [description, setDescription] = useState(event?.description ?? '')
 
   function handleSave() {
     if (!title.trim()) return
     onSave({
-      id:          crypto.randomUUID(),
+      id:          event?.id ?? crypto.randomUUID(),
       title:       title.trim(),
       startDate,
       endDate,
@@ -142,12 +144,14 @@ function EventPopup({ data, calendars, onSave, onClose }: EventPopupProps) {
       <div className="fixed inset-0 z-40 bg-slate-900/10 backdrop-blur-xs" onClick={onClose} />
 
       <div
-        className="fixed z-50 bg-white border border-slate-200 rounded-3xl shadow-xl p-5 w-80 animate-in fade-in zoom-in-95 duration-100"
-        style={{ top: data.y, left: data.x }}
+        className="fixed z-50 bg-white border border-slate-200 rounded-3xl shadow-xl p-5 w-[min(20rem,calc(100vw-2rem))] animate-in fade-in zoom-in-95 duration-100"
+        style={event
+          ? { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
+          : { top: Math.max(16, data.y ?? 96), left: Math.max(16, Math.min(data.x ?? 120, window.innerWidth - 336)) }}
       >
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-            <Plus size={12} strokeWidth={3} className="text-blue-600" /> New Event
+            <Plus size={12} strokeWidth={3} className="text-blue-600" /> {event ? 'Event details' : 'New event'}
           </span>
           <button onClick={onClose} className="p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-all">
             <X size={14} strokeWidth={2.5} />
@@ -224,11 +228,17 @@ function EventPopup({ data, calendars, onSave, onClose }: EventPopupProps) {
           >
             Cancel
           </button>
+          {event && onDelete && <button
+            onClick={() => { if (confirm(`Delete event "${event.title}"?`)) onDelete(event.id) }}
+            className="mr-auto text-xs font-bold text-rose-600 hover:bg-rose-50 px-3 py-2 rounded-xl transition-all"
+          >
+            Delete
+          </button>}
           <button
             onClick={handleSave}
             className="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl shadow-xs transition-all"
           >
-            Save Event
+            {event ? 'Save changes' : 'Save event'}
           </button>
         </div>
       </div>
@@ -245,6 +255,8 @@ type WeekViewProps = {
   calendars: UserCalendar[]
   visibleCalendarIds: string[]
   onCreateEvent: (popup: PopupData) => void
+  onSelectEvent: (event: UserEvent) => void
+  onMoveEvent: (eventId: string, date: Date, hour: number) => void
   onDropTask: (taskId: string, date: Date, hour: number) => void
   onToggleTasks?: () => void
 }
@@ -256,6 +268,8 @@ function WeekView({
   calendars,
   visibleCalendarIds,
   onCreateEvent,
+  onSelectEvent,
+  onMoveEvent,
   onDropTask,
   onToggleTasks,
 }: WeekViewProps & { onToggleTasks?: () => void }) {
@@ -263,8 +277,20 @@ function WeekView({
   const dragStart = useRef<{ day: Date; hour: number } | null>(null)
   const [dragRange, setDragRange] = useState<{ day: Date; startHour: number; endHour: number } | null>(null)
   const [dragOverCol, setDragOverCol] = useState<string | null>(null)
+  const [draggedEventId, setDraggedEventId] = useState<string | null>(null)
+  const [scrollbarWidth, setScrollbarWidth] = useState(0)
 
   const today = new Date()
+
+  useEffect(() => {
+    const scrollElement = scrollRef.current
+    if (!scrollElement) return
+    const measureScrollbar = () => setScrollbarWidth(scrollElement.offsetWidth - scrollElement.clientWidth)
+    measureScrollbar()
+    const observer = new ResizeObserver(measureScrollbar)
+    observer.observe(scrollElement)
+    return () => observer.disconnect()
+  }, [])
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -282,7 +308,6 @@ function WeekView({
     const raw  = START_HOUR + y / HOUR_HEIGHT
     return Math.max(START_HOUR, Math.min(END_HOUR - 0.5, raw))
   }
-
   function handleMouseDown(e: React.MouseEvent<HTMLDivElement>, day: Date) {
     if (e.button !== 0) return
     const hour = getHourFromY(e.currentTarget, e.clientY)
@@ -341,19 +366,20 @@ function WeekView({
   function handleDrop(e: React.DragEvent<HTMLDivElement>, day: Date) {
     e.preventDefault()
     const taskId = e.dataTransfer.getData('taskId')
-    if (!taskId) return
     const hour = getHourFromY(e.currentTarget, e.clientY)
-    onDropTask(taskId, day, Math.floor(hour))
+    const eventId = e.dataTransfer.getData('eventId')
+    if (eventId) onMoveEvent(eventId, day, hour)
+    else if (taskId) onDropTask(taskId, day, Math.floor(hour))
     setDragOverCol(null)
   }
 
   return (
-    <div className="flex flex-col flex-1 overflow-hidden bg-slate-50">
+    <div className="calendar-week flex flex-col flex-1 overflow-hidden bg-slate-50" style={{ '--calendar-scrollbar-width': `${scrollbarWidth}px` } as React.CSSProperties}>
 
       {/* Day headers */}
       <div
         className="calendar-week-columns grid border-b border-slate-200 shrink-0 bg-white"
-        style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}
+        style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}
       >
         <div className="border-r border-slate-100/30" />
         {weekDays.map((day, i) => (
@@ -375,7 +401,7 @@ function WeekView({
       {/* All-day tasks row */}
       <div
         className="calendar-week-columns grid border-b border-slate-200 shrink-0 bg-slate-50"
-        style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}
+        style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}
       >
         <div className="border-r border-slate-100/30 flex items-center justify-end pr-2.5 py-1.5">
           {onToggleTasks ? (
@@ -385,11 +411,12 @@ function WeekView({
           )}
         </div>
         {weekDays.map((day, i) => (
-          <div key={i} className="border-r border-slate-100/30 last:border-r-0 p-1.5 min-h-8 flex flex-col gap-1 bg-slate-100/30">
+          <div key={i} className="min-w-0 border-r border-slate-100/30 last:border-r-0 p-1.5 min-h-8 flex flex-col gap-1 bg-slate-100/30">
             {getTasksForDay(day).map(task => (
               <div
                 key={task.id}
-                className="text-[11px] font-bold text-slate-700 bg-white border border-slate-200 border-l-4 border-l-slate-500 rounded-lg px-2 py-1 truncate shadow-2xs"
+                title={task.title}
+                className="block min-w-0 w-full overflow-hidden text-ellipsis whitespace-nowrap text-[11px] font-bold text-slate-700 bg-white border border-slate-200 border-l-4 border-l-slate-500 rounded-lg px-2 py-1 shadow-2xs"
               >
                 {task.title}
               </div>
@@ -402,7 +429,7 @@ function WeekView({
       <div className="calendar-week-scroll flex-1 overflow-y-scroll" ref={scrollRef}>
         <div
           className="grid relative"
-          style={{ gridTemplateColumns: '60px repeat(7, 1fr)' }}
+          style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}
         >
           {/* Time labels */}
           <div className="border-r border-slate-100/30 bg-white">
@@ -442,7 +469,7 @@ function WeekView({
                 {HOURS.map(h => (
                   <div
                     key={h}
-                    className="absolute w-full border-t border-slate-100 pointer-events-none"
+                    className="calendar-hour-line absolute w-full border-t border-slate-100 pointer-events-none"
                     style={{ top: (h - START_HOUR) * HOUR_HEIGHT }}
                   />
                 ))}
@@ -451,7 +478,7 @@ function WeekView({
                 {HOURS.map(h => (
                   <div
                     key={`half-${h}`}
-                    className="absolute w-full border-t border-slate-50/50 border-dashed pointer-events-none"
+                    className="calendar-half-hour-line absolute w-full border-t border-slate-50/50 border-dashed pointer-events-none"
                     style={{ top: (h - START_HOUR) * HOUR_HEIGHT + HOUR_HEIGHT / 2 }}
                   />
                 ))}
@@ -478,7 +505,12 @@ function WeekView({
                   return (
                     <div
                       key={event.id}
-                      className={`absolute left-1 right-1 rounded-xl border-l-4 px-2 py-1 text-xs font-bold overflow-hidden cursor-pointer shadow-2xs z-10 transition-all ${COLOR_EVENT[color]}`}
+                      draggable
+                      onMouseDown={e => e.stopPropagation()}
+                      onClick={e => { e.stopPropagation(); onSelectEvent(event) }}
+                      onDragStart={e => { e.stopPropagation(); setDraggedEventId(event.id); e.dataTransfer.setData('eventId', event.id); e.dataTransfer.effectAllowed = 'move' }}
+                      onDragEnd={() => setDraggedEventId(null)}
+                      className={`absolute left-1 right-1 rounded-xl border-l-4 px-2 py-1 text-xs font-bold overflow-hidden cursor-grab shadow-2xs z-10 transition-all ${draggedEventId === event.id ? 'bg-slate-200 border-slate-400 text-slate-500 opacity-80' : COLOR_EVENT[color]}`}
                       style={{ top, height }}
                     >
                       <p className="truncate leading-tight font-extrabold">{event.title}</p>
@@ -508,6 +540,8 @@ type DayViewProps = {
   calendars: UserCalendar[]
   visibleCalendarIds: string[]
   onCreateEvent: (popup: PopupData) => void
+  onSelectEvent: (event: UserEvent) => void
+  onMoveEvent: (eventId: string, date: Date, hour: number) => void
   onDropTask: (taskId: string, date: Date, hour: number) => void
 }
 
@@ -518,6 +552,8 @@ function DayView({
   calendars,
   visibleCalendarIds,
   onCreateEvent,
+  onSelectEvent,
+  onMoveEvent,
   onDropTask,
 }: DayViewProps) {
   return (
@@ -528,6 +564,8 @@ function DayView({
       calendars={calendars}
       visibleCalendarIds={visibleCalendarIds}
       onCreateEvent={onCreateEvent}
+      onSelectEvent={onSelectEvent}
+      onMoveEvent={onMoveEvent}
       onDropTask={onDropTask}
     />
   )
@@ -542,9 +580,10 @@ type MonthViewProps = {
   calendars: UserCalendar[]
   visibleCalendarIds: string[]
   onSelectDate: (date: Date) => void
+  onSelectEvent: (event: UserEvent) => void
 }
 
-function MonthView({ currentDate, events, tasks, calendars, visibleCalendarIds, onSelectDate }: MonthViewProps) {
+function MonthView({ currentDate, events, tasks, calendars, visibleCalendarIds, onSelectDate, onSelectEvent }: MonthViewProps) {
   const days = getMonthDays(currentDate.getFullYear(), currentDate.getMonth())
   const today = new Date()
 
@@ -596,6 +635,7 @@ function MonthView({ currentDate, events, tasks, calendars, visibleCalendarIds, 
                 {dayEvents.map(event => (
                   <div
                     key={event.id}
+                    onClick={e => { e.stopPropagation(); onSelectEvent(event) }}
                     className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md truncate border-l-2 ${COLOR_EVENT[getCalendarColor(event.calendarId)]}`}
                   >
                     {event.title}
@@ -671,9 +711,13 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
 
   // Defer rendering of the full calendar grid to improve initial paint and perceived performance.
   useEffect(() => {
-    if ((window as any).requestIdleCallback) {
-      const id = (window as any).requestIdleCallback(() => setReady(true))
-      return () => (window as any).cancelIdleCallback?.(id)
+    const idleWindow = window as Window & {
+      requestIdleCallback?: (callback: () => void) => number
+      cancelIdleCallback?: (id: number) => void
+    }
+    if (idleWindow.requestIdleCallback) {
+      const id = idleWindow.requestIdleCallback(() => setReady(true))
+      return () => idleWindow.cancelIdleCallback?.(id)
     }
     const t = setTimeout(() => setReady(true), 60)
     return () => clearTimeout(t)
@@ -682,6 +726,7 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
   const [view, setView]             = useState<View>('week')
   const [currentDate, setCurrentDate] = useState(new Date())
   const [popup, setPopup]           = useState<PopupData | null>(null)
+  const [selectedEvent, setSelectedEvent] = useState<UserEvent | null>(null)
 
   const weekDays = getWeekDays(currentDate)
 
@@ -708,8 +753,41 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
   }
 
   function saveEvent(event: UserEvent) {
-    setEvents(prev => [...prev, event])
+    setEvents(prev => selectedEvent
+      ? prev.map(current => current.id === event.id ? event : current)
+      : [...prev, event]
+    )
     setPopup(null)
+    setSelectedEvent(null)
+  }
+
+  function selectEvent(event: UserEvent) {
+    setSelectedEvent(event)
+    setPopup({ startDate: event.startDate, endDate: event.endDate, x: 120, y: 96 })
+  }
+
+  function openCreatePopup(nextPopup: PopupData) {
+    setSelectedEvent(null)
+    setPopup(nextPopup)
+  }
+
+  function deleteEvent(eventId: string) {
+    setEvents(prev => prev.filter(event => event.id !== eventId))
+    setPopup(null)
+    setSelectedEvent(null)
+  }
+
+  function moveEvent(eventId: string, date: Date, hour: number) {
+    setEvents(prev => prev.map(event => {
+      if (event.id !== eventId) return event
+      const start = new Date(event.startDate)
+      const end = new Date(event.endDate)
+      const duration = end.getTime() - start.getTime()
+      const nextStart = new Date(date)
+      nextStart.setHours(Math.floor(hour), hour % 1 >= 0.5 ? 30 : 0, 0, 0)
+      const nextEnd = new Date(nextStart.getTime() + duration)
+      return { ...event, startDate: toDateTimeLocal(nextStart, nextStart.getHours() + nextStart.getMinutes() / 60), endDate: toDateTimeLocal(nextEnd, nextEnd.getHours() + nextEnd.getMinutes() / 60) }
+    }))
   }
 
   function handleDropTask(taskId: string, date: Date) {
@@ -803,7 +881,9 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
               tasks={tasks}
               calendars={calendars}
               visibleCalendarIds={visibleCalendarIds}
-              onCreateEvent={setPopup}
+              onCreateEvent={openCreatePopup}
+              onSelectEvent={selectEvent}
+              onMoveEvent={moveEvent}
               onDropTask={handleDropTask}
             />
           )}
@@ -814,7 +894,9 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
               tasks={tasks}
               calendars={calendars}
               visibleCalendarIds={visibleCalendarIds}
-              onCreateEvent={setPopup}
+              onCreateEvent={openCreatePopup}
+              onSelectEvent={selectEvent}
+              onMoveEvent={moveEvent}
               onDropTask={handleDropTask}
               onToggleTasks={onToggleTasks}
             />
@@ -827,6 +909,7 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
               calendars={calendars}
               visibleCalendarIds={visibleCalendarIds}
               onSelectDate={(d) => { setCurrentDate(d); setView('day') }}
+              onSelectEvent={selectEvent}
             />
           )}
           {view === 'year' && (
@@ -838,12 +921,15 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
         </div>
       )}
 
-      {/* Event creation popup */}
+      {/* Event creation and editing popup */}
       {popup && (
         <EventPopup
           data={popup}
           calendars={calendars}
+          event={selectedEvent ?? undefined}
+          key={selectedEvent?.id ?? 'new-event'}
           onSave={saveEvent}
+          onDelete={deleteEvent}
           onClose={() => setPopup(null)}
         />
       )}

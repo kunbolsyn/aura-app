@@ -1,16 +1,18 @@
 import { useState } from "react"
 import type { FormEvent } from "react"
-import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, Moon, Sparkles } from "lucide-react"
+import { ArrowRight, Check, Eye, EyeOff, LockKeyhole, Mail, Moon, Sparkles, Sun } from "lucide-react"
 
 type AuthMode = "sign-in" | "sign-up"
 
 type AuthPageProps = {
   onSubmit?: (credentials: { email: string; password: string; mode: AuthMode }) => Promise<void> | void
   onGoogleAuth?: () => Promise<void> | void
+  isDarkMode?: boolean
+  onToggleDarkMode?: () => void
   error?: string | null
 }
 
-function AuthPage({ onSubmit, onGoogleAuth, error }: AuthPageProps) {
+function AuthPage({ onSubmit, onGoogleAuth, isDarkMode = false, onToggleDarkMode, error }: AuthPageProps) {
   const [mode, setMode] = useState<AuthMode>("sign-in")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -55,16 +57,16 @@ function AuthPage({ onSubmit, onGoogleAuth, error }: AuthPageProps) {
   }
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#f5f8f6] text-slate-900">
+    <main className="aura-auth-shell min-h-screen overflow-hidden bg-[#f5f8f6] text-slate-900">
       <div className="grid min-h-screen lg:grid-cols-[minmax(0,1.1fr)_minmax(460px,0.9fr)]">
-        <section className="relative hidden overflow-hidden bg-[#123d3a] px-12 py-10 text-white lg:flex lg:flex-col xl:px-20">
+        <section className="aura-auth-brand-panel relative hidden overflow-hidden bg-[#123d3a] px-12 py-10 text-white lg:flex lg:flex-col xl:px-20">
           <div className="absolute inset-0 opacity-20" style={{ backgroundImage: "linear-gradient(rgba(255,255,255,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.16) 1px, transparent 1px)", backgroundSize: "46px 46px" }} />
           <div className="absolute -right-28 top-24 h-80 w-80 rounded-full border border-emerald-200/30" />
           <div className="absolute -right-12 top-40 h-48 w-48 rounded-full border border-emerald-200/20" />
 
           <div className="relative flex items-center gap-2 text-lg font-extrabold tracking-tight">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-300 text-[#123d3a]"><Moon size={17} fill="currentColor" strokeWidth={2.5} /></span>
-            Aura
+            aura
           </div>
 
           <div className="relative mt-auto max-w-xl pb-8">
@@ -78,11 +80,14 @@ function AuthPage({ onSubmit, onGoogleAuth, error }: AuthPageProps) {
           </div>
         </section>
 
-        <section className="flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
+        <section className="aura-auth-form-panel relative flex min-h-screen items-center justify-center px-5 py-10 sm:px-8">
+          {onToggleDarkMode && <button type="button" onClick={onToggleDarkMode} aria-label={isDarkMode ? "Use light mode" : "Use dark mode"} className="absolute right-5 top-5 rounded-full border border-slate-200 bg-white p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-slate-900 sm:right-8 sm:top-8">
+            {isDarkMode ? <Sun size={17} /> : <Moon size={17} />}
+          </button>}
           <div className="w-full max-w-md">
             <div className="mb-8 flex items-center gap-2 text-lg font-extrabold tracking-tight lg:hidden">
               <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-blue-600 text-white"><Moon size={17} fill="currentColor" strokeWidth={2.5} /></span>
-              Aura
+              aura
             </div>
 
             <div className="mb-8">

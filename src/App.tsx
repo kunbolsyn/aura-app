@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Menu, ListTodo } from "lucide-react";
+import { Menu, ListTodo, Moon } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import type { Task, TaskList, UserCalendar, UserEvent } from "./types";
 import Sidebar from "./components/Sidebar";
@@ -201,11 +201,11 @@ function App() {
   }
 
   if (!user) {
-    return <AuthPage onSubmit={handleAuthSubmit} onGoogleAuth={handleGoogleAuth} error={authError} />
+    return <AuthPage onSubmit={handleAuthSubmit} onGoogleAuth={handleGoogleAuth} isDarkMode={isDarkMode} onToggleDarkMode={() => setIsDarkMode(prev => !prev)} error={authError} />
   }
 
   return (
-    <div className="flex flex-col lg:flex-row h-screen bg-slate-50 text-slate-800 overflow-hidden font-sans">
+    <div className="aura-app flex flex-col lg:flex-row h-screen bg-slate-50 text-slate-800 overflow-hidden font-sans">
       
       {/* Mobile Responsive Header */}
       <header className="lg:hidden flex items-center justify-between px-5 py-3.5 bg-white border-b border-slate-200/80 shadow-xs shrink-0 z-20">
@@ -215,9 +215,9 @@ function App() {
         >
           <Menu size={20} strokeWidth={2.5} />
         </button>
-        <span className="font-extrabold text-slate-900 text-lg tracking-tight flex items-center gap-1.5">
-          <span className="w-3 h-3 rounded-full bg-emerald-600 shadow-xs shadow-emerald-600/30"></span>
-          Aura
+        <span className="font-extrabold text-slate-900 text-lg tracking-tight flex items-center gap-2">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm shadow-blue-600/20"><Moon size={15} fill="currentColor" strokeWidth={2.5} /></span>
+          aura
         </span>
         <button
           onClick={() => setIsTasksOpen(prev => !prev)}

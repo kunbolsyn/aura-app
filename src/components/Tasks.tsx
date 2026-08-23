@@ -316,7 +316,7 @@ export default function Tasks({ tasks, setTasks, lists, activeListId, onListSele
 
   return (
     <div className="w-full h-full flex flex-col bg-white">
-      <div className="flex-1 overflow-y-auto px-6 py-6 scrollbar-thin">
+      <div className="tasks-scroll flex-1 overflow-y-auto px-6 py-6 scrollbar-thin">
         {/* Header */}
         <div className="mb-6">
               <div className="flex items-start justify-between">
@@ -494,7 +494,7 @@ export default function Tasks({ tasks, setTasks, lists, activeListId, onListSele
                 onChange={(e) => setInput(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && addTask()}
                 placeholder="Add a task..."
-                className="flex-1 min-w-0 appearance-none bg-transparent text-sm font-semibold text-slate-800 placeholder:text-slate-400 outline-none"
+                className="task-add-input flex-1 min-w-0 appearance-none bg-transparent text-sm font-semibold text-slate-800 placeholder:text-slate-400 outline-none focus:outline-none"
               />
             </div>
 
@@ -561,7 +561,7 @@ export default function Tasks({ tasks, setTasks, lists, activeListId, onListSele
 
         {/* Empty state */}
         {pendingTasks.length === 0 && completedTasks.length === 0 && (
-          <div className="text-center py-12 px-4 bg-slate-50 rounded-2xl border border-slate-100">
+          <div className="text-center py-12 px-4">
             <p className="text-sm font-bold text-slate-400">
               No tasks in this list
             </p>
@@ -639,7 +639,9 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, isEditing, onStartEdit, o
   const [editDueDate, setEditDueDate]       = useState<string | null>(task.dueDate);
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceType>(task.recurrence);
   const [showRowDatePicker, setShowRowDatePicker] = useState(false);
+  const [showTaskMenu, setShowTaskMenu] = useState(false);
   const rowDatePickerRef = useRef<HTMLDivElement>(null);
+  const taskMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setEditTitle(task.title);
@@ -650,6 +652,7 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, isEditing, onStartEdit, o
   useEffect(() => {
     function handle(e: MouseEvent) {
       if (!rowDatePickerRef.current?.contains(e.target as Node)) setShowRowDatePicker(false);
+      if (!taskMenuRef.current?.contains(e.target as Node)) setShowTaskMenu(false);
     }
     document.addEventListener("mousedown", handle);
     return () => document.removeEventListener("mousedown", handle);
@@ -781,26 +784,43 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, isEditing, onStartEdit, o
           {!task.completed && task.recurrence && (
             <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
               <Repeat size={10} strokeWidth={2.5} />
-              <span>Repeats {task.recurrence}</span>
+              <span className="capitalize">{task.recurrence}</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Control Action overlay */}
-      <div className="opacity-0 group-hover:opacity-100 transition-all duration-100 flex items-center gap-0.5 shrink-0 ml-1">
+      {/* Task actions */}
+      <div className="relative shrink-0 ml-1" ref={taskMenuRef}>
         <button
-          onClick={onStartEdit}
-          className="p-1 text-slate-400 hover:text-blue-600 hover:bg-slate-100 rounded-lg transition-all"
+          onClick={() => setShowTaskMenu(value => !value)}
+          aria-label="Task options"
+          aria-expanded={showTaskMenu}
+          aria-haspopup="menu"
+          className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all"
         >
-          <Edit3 size={13} strokeWidth={2.5} />
+          <MoreVertical size={17} strokeWidth={2.5} />
         </button>
-        <button
-          onClick={() => onDelete(task.id)}
-          className="p-1 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all"
-        >
-          <Trash2 size={13} strokeWidth={2.5} />
-        </button>
+        {showTaskMenu && (
+          <div className="absolute right-0 top-full z-30 mt-1 w-36 rounded-xl border border-slate-200 bg-white py-1 shadow-lg" role="menu">
+            <button
+              onClick={() => { setShowTaskMenu(false); onStartEdit() }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
+              role="menuitem"
+            >
+              <Edit3 size={14} className="text-slate-500" />
+              Edit
+            </button>
+            <button
+              onClick={() => { setShowTaskMenu(false); onDelete(task.id) }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-rose-600 transition-colors hover:bg-rose-50"
+              role="menuitem"
+            >
+              <Trash2 size={14} className="text-rose-500" />
+              Delete
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

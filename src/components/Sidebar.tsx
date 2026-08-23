@@ -162,10 +162,9 @@ function Sidebar({
       {/* Logo */}
       <div className="px-6 mb-6">
         <h1 className="text-lg font-extrabold text-slate-950 tracking-tight flex items-center gap-2">
-          <span className="w-3.5 h-3.5 rounded-full bg-blue-600 shadow-sm shadow-blue-500/20"></span>
-          Aura
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm shadow-blue-500/20"><Moon size={15} fill="currentColor" strokeWidth={2.5} /></span>
+          aura
         </h1>
-        <p className="text-[11px] font-medium text-slate-400 mt-0.5 ml-5">your space to think</p>
       </div>
 
       {/* Mini calendar */}

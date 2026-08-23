@@ -8,6 +8,8 @@ type Workspace = {
   events: UserEvent[]
 }
 
+let saveQueue = Promise.resolve()
+
 function throwOnError(error: { message: string } | null) {
   if (error) throw new Error(error.message)
 }
@@ -54,29 +56,21 @@ export async function loadWorkspace(): Promise<Workspace> {
   }
 }
 
-export async function saveWorkspace(workspace: Workspace) {
+async function persistWorkspace(workspace: Workspace) {
   const client = requireSupabase()
   const { data: userData, error: userError } = await client.auth.getUser()
   throwOnError(userError)
   if (!userData.user) throw new Error("You must be signed in to save workspace data.")
 
   const userId = userData.user.id
-  const deletes = await Promise.all([
-    client.from("tasks").delete().eq("user_id", userId),
-    client.from("task_lists").delete().eq("user_id", userId),
-    client.from("calendars").delete().eq("user_id", userId),
-    client.from("events").delete().eq("user_id", userId),
-  ])
-  deletes.forEach(result => throwOnError(result.error))
-
   const parents = await Promise.all([
-    client.from("task_lists").insert(workspace.lists.map(list => ({ id: list.id, user_id: userId, name: list.name }))),
-    client.from("calendars").insert(workspace.calendars.map(calendar => ({ id: calendar.id, user_id: userId, name: calendar.name, color: calendar.color }))),
+    client.from("task_lists").upsert(workspace.lists.map(list => ({ id: list.id, user_id: userId, name: list.name })), { onConflict: "id" }),
+    client.from("calendars").upsert(workspace.calendars.map(calendar => ({ id: calendar.id, user_id: userId, name: calendar.name, color: calendar.color })), { onConflict: "id" }),
   ])
   parents.forEach(result => throwOnError(result.error))
 
   const children = await Promise.all([
-    client.from("tasks").insert(workspace.tasks.map(task => ({
+    client.from("tasks").upsert(workspace.tasks.map(task => ({
       id: task.id,
       user_id: userId,
       title: task.title,
@@ -88,8 +82,8 @@ export async function saveWorkspace(workspace: Workspace) {
       recurrence: task.recurrence,
       list_id: task.listId,
       created_at: task.createdAt,
-    }))),
-    client.from("events").insert(workspace.events.map(event => ({
+    })), { onConflict: "id" }),
+    client.from("events").upsert(workspace.events.map(event => ({
       id: event.id,
       user_id: userId,
       title: event.title,
@@ -99,7 +93,26 @@ export async function saveWorkspace(workspace: Workspace) {
       description: event.description ?? null,
       location: event.location ?? null,
       calendar_id: event.calendarId,
-    }))),
+    })), { onConflict: "id" }),
   ])
   children.forEach(result => throwOnError(result.error))
+
+  const deletes = await Promise.all([
+    deleteMissing(client, "tasks", workspace.tasks.map(task => task.id), userId),
+    deleteMissing(client, "events", workspace.events.map(event => event.id), userId),
+    deleteMissing(client, "task_lists", workspace.lists.map(list => list.id), userId),
+    deleteMissing(client, "calendars", workspace.calendars.map(calendar => calendar.id), userId),
+  ])
+  deletes.forEach(result => throwOnError(result.error))
+}
+
+function deleteMissing(client: ReturnType<typeof requireSupabase>, table: string, ids: string[], userId: string) {
+  const query = client.from(table).delete().eq("user_id", userId)
+  return ids.length ? query.not("id", "in", `(${ids.join(",")})`) : query
+}
+
+export function saveWorkspace(workspace: Workspace) {
+  const nextSave = saveQueue.then(() => persistWorkspace(workspace))
+  saveQueue = nextSave.then(() => undefined, () => undefined)
+  return nextSave
 }
