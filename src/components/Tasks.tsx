@@ -1,6 +1,8 @@
 import { useState, useRef, useEffect } from "react";
+import { createPortal } from "react-dom";
 import { Repeat, Plus, Check, Trash2, X, Edit3, MoreVertical, Clock, ChevronLeft, ChevronRight } from "lucide-react";
 import type { Task, TaskList, RecurrenceType } from "../types";
+import { OptionMenu } from "./PickerControls";
 
 type Props = {
   tasks: Task[];
@@ -21,16 +23,33 @@ function getDateLabel(dateStr: string | null): string {
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
-  const d = new Date(dateStr);
+  const [year, month, day] = dateStr.split("-").map(Number);
+  const d = new Date(year, (month ?? 1) - 1, day ?? 1);
   
   if (d.toDateString() === today.toDateString()) return "Today";
   if (d.toDateString() === tomorrow.toDateString()) return "Tomorrow";
-  
-  // Format to dd.mm.yyyy
-  const dd = String(d.getDate()).padStart(2, "0");
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yyyy = d.getFullYear();
-  return `${dd}.${mm}.${yyyy}`;
+
+  const sameMonth = d.getFullYear() === today.getFullYear() && d.getMonth() === today.getMonth();
+  const monthLabel = d.toLocaleDateString("en-GB", { month: "short" });
+  const yearLabel = sameMonth || d.getFullYear() === today.getFullYear() ? "" : `, ${d.getFullYear()}`;
+  return `${d.toLocaleDateString("en-GB", { weekday: "short" })}, ${monthLabel} ${d.getDate()}${yearLabel}`;
+}
+
+function toLocalISODate(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+function fromLocalISODate(value: string | null): Date {
+  if (!value) return new Date();
+  const [year, month, day] = value.slice(0, 10).split("-").map(Number);
+  return new Date(year, (month || 1) - 1, day || 1, 12);
+}
+
+function getRelativeDateISO(daysFromToday: number): string {
+  const today = new Date();
+  const date = new Date(today.getFullYear(), today.getMonth(), today.getDate() + daysFromToday, 12);
+  return toLocalISODate(date);
 }
 
 function calculateNextDate(currentDateStr: string, recurrence: NonNullable<RecurrenceType>): string | null {
@@ -95,16 +114,18 @@ function CustomDatePicker({
   value, 
   onChange, 
   recurrence, 
-  onRecurrenceChange, 
-  onClose 
+  onRecurrenceChange,
+  onClose,
+  containerRef,
 }: { 
   value: string | null; 
   onChange: (date: string | null) => void;
   recurrence: RecurrenceType;
   onRecurrenceChange: (r: RecurrenceType) => void;
   onClose: () => void;
+  containerRef: { current: HTMLElement | null };
 }) {
-  const [viewDate, setViewDate] = useState(value ? new Date(value) : new Date());
+  const [viewDate, setViewDate] = useState(() => fromLocalISODate(value));
   const today = new Date();
   
   const year = viewDate.getFullYear();
@@ -120,16 +141,28 @@ function CustomDatePicker({
   for (let d = 1; d <= daysInMonth; d++) cells.push({ day: d, month: 'current' });
   while (cells.length % 7 !== 0) cells.push({ day: cells.length - daysInMonth - startOffset + 1, month: 'next' });
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+  if (!containerRef.current) return null;
+  return createPortal((
+    <div
+      className="absolute inset-0 z-[90] flex items-center justify-center p-4"
+    >
       {/* Backdrop */}
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" onClick={onClose} />
+      <div className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm transition-opacity duration-200" onClick={onClose} />
       
       {/* Overlay Content */}
-      <div className="relative bg-white border border-slate-200 rounded-3xl p-6 shadow-2xl min-w-[320px] animate-in fade-in zoom-in-95 duration-200">
-        <div className="flex items-center justify-between mb-5">
-          <span className="text-base font-extrabold text-slate-800">
-            {viewDate.toLocaleDateString("en-GB", { month: "long", year: "numeric" })}
+      <div
+        onMouseDown={event => event.stopPropagation()}
+        onKeyDown={event => {
+          if (event.key === "Enter") {
+            event.preventDefault();
+            onClose();
+          }
+        }}
+        className="relative z-[100] w-[min(18rem,calc(100vw-2rem))] rounded-3xl border border-slate-200 bg-white p-4 shadow-2xl animate-in fade-in zoom-in-95 duration-200"
+      >
+        <div className="mb-3 flex items-center justify-between">
+          <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-widest text-slate-400">
+            <Clock size={13} className="text-blue-600" /> Schedule task
           </span>
           <div className="flex gap-1.5">
             <button 
@@ -147,16 +180,16 @@ function CustomDatePicker({
           </div>
         </div>
       
-        <div className="grid grid-cols-7 mb-3">
+        <div className="mb-2 grid grid-cols-7">
           {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, i) => (
             <div key={i} className="text-center text-[10px] font-black text-slate-400 py-1">{d}</div>
           ))}
         </div>
         
-        <div className="grid grid-cols-7 gap-1.5 mb-6">
+        <div className="mb-3 grid grid-cols-7 gap-1">
         {cells.map((cell, i) => {
           const cellDate = new Date(year, cell.month === 'current' ? month : cell.month === 'prev' ? month - 1 : month + 1, cell.day);
-          const isoStr = cellDate.toISOString().split('T')[0];
+          const isoStr = toLocalISODate(cellDate);
           const isSelected = value === isoStr;
           const isToday = cell.month === 'current' && cell.day === today.getDate() && month === today.getMonth() && year === today.getFullYear();
           
@@ -166,7 +199,7 @@ function CustomDatePicker({
               onClick={() => {
                 onChange(isoStr);
               }}
-                className={`text-center text-xs py-2.5 font-bold rounded-xl transition-all ${
+                className={`rounded-xl py-1.5 text-center text-xs font-bold transition-all ${
                   isSelected
                     ? 'bg-blue-600 text-white shadow-lg shadow-blue-200'
                     : isToday
@@ -182,40 +215,31 @@ function CustomDatePicker({
         })}
       </div>
 
-        <div className="border-t border-slate-100 pt-5 mb-6">
+        <div className="mb-3 border-t border-slate-100 pt-3">
           <label className="block text-[10px] text-slate-400 uppercase tracking-widest font-black mb-2 px-1">
             Recurrence
           </label>
           <div className="relative">
-            <select
+            <OptionMenu
               value={recurrence ?? ""}
-              onChange={(e) => onRecurrenceChange((e.target.value as RecurrenceType) || null)}
-              className="w-full pl-4 pr-10 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs font-bold text-slate-700 outline-none focus:border-blue-500 transition-all appearance-none cursor-pointer"
-            >
-              <option value="">No Repeat</option>
-              {RECURRENCE_OPTIONS.map(opt => (
-                <option key={opt} value={opt} className="capitalize">
-                  {opt}
-                </option>
-              ))}
-            </select>
-            <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><path d="M6 9l6 6 6-6"/></svg>
-            </div>
+              onChange={(next) => onRecurrenceChange((next as RecurrenceType) || null)}
+              className="w-full"
+              options={[{ value: "", label: "No Repeat" }, ...RECURRENCE_OPTIONS.map(option => ({ value: option, label: option[0].toUpperCase() + option.slice(1) }))]}
+            />
           </div>
         </div>
 
         <div className="flex gap-3">
           <button
             onClick={onClose}
-            className="flex-1 px-4 py-3.5 bg-blue-600 text-white text-xs font-black rounded-2xl shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all active:scale-95"
+            className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white shadow-xl shadow-blue-200 transition-all hover:bg-blue-700 active:scale-95"
           >
             Save Schedule
           </button>
         </div>
       </div>
     </div>
-  );
+  ), containerRef.current);
 }
 
 // --- Main Component ---
@@ -239,6 +263,7 @@ export default function Tasks({ tasks, setTasks, lists, activeListId, onListSele
 
   // Date Picker Ref
   const datePickerRef = useRef<HTMLDivElement>(null);
+  const tasksPanelRef = useRef<HTMLDivElement>(null);
 
   // Click outside handlers: close recurrence popup and list menu
   useEffect(() => {
@@ -315,29 +340,37 @@ export default function Tasks({ tasks, setTasks, lists, activeListId, onListSele
   }
 
   return (
-    <div className="w-full h-full flex flex-col bg-white">
-      <div className="tasks-scroll flex-1 overflow-y-auto px-6 py-6 scrollbar-thin">
-        {/* Header */}
-        <div className="mb-6">
-              <div className="flex items-start justify-between">
-                <div className="flex flex-col">
-                  <span className="font-extrabold text-slate-900 text-base mb-2">Tasks</span>
+    <div ref={tasksPanelRef} className="relative w-full h-full flex flex-col bg-white">
+      <div className="tasks-scroll flex-1 overflow-y-auto px-6 py-4 scrollbar-thin">
+        {/* List selector and actions */}
+        <div className="mb-3">
+          <div className="relative flex items-center justify-center" ref={listMenuRef}>
+            {onCloseTasksMobile && (
+              <button
+                onClick={onCloseTasksMobile}
+                className="absolute left-0 rounded-lg p-1.5 text-slate-500 transition-all hover:bg-slate-100 lg:hidden"
+                aria-label="Back to calendar"
+              >
+                <ChevronLeft size={18} strokeWidth={2.5} />
+              </button>
+            )}
 
-                  {/* Modern list selector with actions menu on the right */}
-                  <div className="flex items-center gap-2 relative" ref={listMenuRef}>
                     <div className="relative">
                       <button
-                        onClick={() => setListMenuOpen((v) => !v)}
+                        onClick={() => {
+                          setListMenuOpen((value) => !value);
+                          setActiveActionsListId(null);
+                        }}
                         aria-haspopup="true"
                         aria-expanded={listMenuOpen}
-                        className="flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md transition-all text-sm font-bold text-slate-800"
+                        className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-bold text-slate-800 transition-all hover:bg-slate-100"
                       >
                         <span className="truncate">{activeList?.name ?? 'Select list'}</span>
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" className="text-slate-400"><path d="M6 9l6 6 6-6" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" /></svg>
                       </button>
 
                       {listMenuOpen && (
-                        <div className="absolute mt-2 left-0 z-20 w-56 bg-white border border-slate-200 rounded-2xl py-2 shadow-lg">
+                        <div className="absolute left-1/2 z-20 mt-2 w-48 max-w-[calc(100vw-2rem)] -translate-x-1/2 origin-top rounded-2xl border border-slate-200 bg-white py-2 shadow-lg animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150">
                           <div className="max-h-52 overflow-auto">
                             {lists.map(l => (
                               <button
@@ -346,23 +379,27 @@ export default function Tasks({ tasks, setTasks, lists, activeListId, onListSele
                                   onListSelect(l.id);
                                   setListMenuOpen(false);
                                 }}
-                                className={`w-full text-left px-4 py-2 text-sm font-semibold transition-colors hover:bg-slate-50 ${
+                                aria-selected={l.id === activeListId}
+                                className={`task-list-option w-full flex items-center gap-2 text-left px-4 py-2 text-sm font-semibold transition-colors hover:bg-slate-50 ${
                                   l.id === activeListId ? 'bg-blue-50 text-blue-700' : 'text-slate-700'
                                 }`}
                               >
-                                {l.name}
+                                <span className="flex h-4 w-4 shrink-0 items-center justify-center">
+                                  {l.id === activeListId && <Check size={14} strokeWidth={2.5} />}
+                                </span>
+                                <span className="min-w-0 flex-1 truncate">{l.name}</span>
                               </button>
                             ))}
                           </div>
 
-                          <div className="border-t border-slate-100 p-3" ref={addListRef}>
+                          <div className="border-t border-slate-100 pt-1.5" ref={addListRef}>
                             {!showAddListPopup ? (
                               <button
                                 onClick={() => {
                                   setShowAddListPopup(true);
                                   setNewListName("");
                                 }}
-                                className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-white border border-slate-200 rounded-xl text-sm font-bold text-blue-600 hover:bg-blue-50 transition-all"
+                                className="w-full flex items-center gap-2 px-4 py-2 text-sm font-semibold text-blue-600 hover:bg-blue-50 transition-all"
                               >
                                 <Plus size={14} />
                                 Add list
@@ -413,17 +450,20 @@ export default function Tasks({ tasks, setTasks, lists, activeListId, onListSele
 
                     {/* Three dots actions menu for active list, outside of the selector dropdown */}
                     {activeList && (
-                      <div className="relative">
+                      <div className="absolute right-0">
                         <button
-                          onClick={() => setActiveActionsListId(activeActionsListId === activeListId ? null : activeListId)}
-                          className="p-2 bg-white border border-slate-200 rounded-xl shadow-sm hover:shadow-md hover:bg-slate-50 transition-all text-slate-500 hover:text-slate-700 flex items-center justify-center"
+                          onClick={() => {
+                            setActiveActionsListId(activeActionsListId === activeListId ? null : activeListId);
+                            setListMenuOpen(false);
+                          }}
+                          className="flex items-center justify-center rounded-xl p-2 text-slate-500 transition-all hover:bg-slate-100 hover:text-slate-700"
                           aria-label="List options"
                         >
                           <MoreVertical size={16} />
                         </button>
 
                         {activeActionsListId === activeListId && (
-                          <div className="absolute left-0 mt-1.5 z-30 w-36 bg-white border border-slate-200 rounded-xl py-1 shadow-md">
+                          <div className="absolute right-0 top-full z-30 mt-1.5 w-36 origin-top-right rounded-xl border border-slate-200 bg-white py-1 shadow-md animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150">
                             <button
                               onClick={(e) => {
                                 e.stopPropagation();
@@ -455,36 +495,14 @@ export default function Tasks({ tasks, setTasks, lists, activeListId, onListSele
                         )}
                       </div>
                     )}
-                  </div>
+          </div>
 
-                </div>
 
-                {/* Close button (always visible) */}
-                <div className="flex items-center gap-2">
-                  {onCloseTasksMobile && (
-                    <button
-                      onClick={onCloseTasksMobile}
-                      className="p-1.5 hover:bg-slate-100 rounded-lg text-slate-500 transition-all"
-                      aria-label="Close tasks"
-                    >
-                      <X size={18} strokeWidth={2.5} />
-                    </button>
-                  )}
-                </div>
-              </div>
-
-              <p className="text-xs font-bold text-slate-400 mt-3 uppercase tracking-wide">
-                {new Date().toLocaleDateString("en-GB", {
-                  weekday: "long",
-                  day: "numeric",
-                  month: "short",
-                })}
-              </p>
-            </div>
+        </div>
 
         {/* Add Task Box - GOOGLE CALENDAR STYLE */}
-        <div className="mb-6">
-          <div className="border border-slate-200/80 rounded-2xl bg-slate-50/50 hover:bg-white shadow-xs focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:border-blue-500 focus-within:bg-white transition-all flex flex-col p-3.5 gap-3">
+        <div className="mb-3">
+          <div className="rounded-2xl bg-slate-50/50 hover:bg-white shadow-xs focus-within:ring-4 focus-within:ring-blue-500/10 focus-within:bg-white transition-all flex flex-col p-3 gap-3">
             
             {/* Top Row: Input Field */}
             <div className="flex items-center gap-2.5">
@@ -499,26 +517,45 @@ export default function Tasks({ tasks, setTasks, lists, activeListId, onListSele
             </div>
 
             {/* Bottom Row: Action Buttons */}
-            <div className="flex items-center gap-2 flex-wrap pl-1.5">
+            <div className="flex items-center gap-2 pl-1.5">
+              {!dueDate && <>
+                <button
+                  type="button"
+                  onClick={() => setDueDate(getRelativeDateISO(0))}
+                  className="task-quick-date shrink-0 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-500 transition-all duration-150 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                >
+                  Today
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDueDate(getRelativeDateISO(1))}
+                  className="task-quick-date shrink-0 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-500 transition-all duration-150 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+                >
+                  Tomorrow
+                </button>
+              </>}
               
               {/* Custom Date & Time Picker Trigger */}
-              <div className="relative shrink-0" ref={datePickerRef}>
+              <div className="relative min-w-0 max-w-full flex-none" ref={datePickerRef}>
                 <button
+                  type="button"
                   onClick={() => setShowDatePicker(!showDatePicker)}
-                  className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
+                  title={dueDate ? "Change due date" : "Set due date"}
+                  aria-label={dueDate ? "Change due date" : "Set due date"}
+                  className={`task-date-picker-trigger flex w-auto max-w-full min-w-0 items-center gap-1.5 overflow-hidden px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all border ${
                     dueDate || showDatePicker
                       ? "text-blue-700 bg-blue-50 border-blue-200"
-                      : "text-slate-500 bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-100/50"
+                      : "text-slate-500 bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
                   }`}
                 >
-                  <Clock size={14} strokeWidth={2.5} />
+                  <Clock size={14} className="shrink-0" strokeWidth={2.5} />
                   {dueDate ? (
-                    <div className="flex items-center gap-1">
-                      <span>{getDateLabel(dueDate)}</span>
-                      {recurrence && <Repeat size={10} className="text-emerald-600" />}
+                    <div className="flex min-w-0 items-center gap-1">
+                      <span className="truncate">{getDateLabel(dueDate)}</span>
+                      {recurrence && <Repeat size={10} className="shrink-0 text-emerald-600" />}
                     </div>
                   ) : (
-                    <span>Set date & time</span>
+                    <span className="sr-only">Set due date</span>
                   )}
                   
                   {dueDate && (
@@ -542,6 +579,7 @@ export default function Tasks({ tasks, setTasks, lists, activeListId, onListSele
                     recurrence={recurrence}
                     onRecurrenceChange={setRecurrence}
                     onClose={() => setShowDatePicker(false)}
+                    containerRef={tasksPanelRef}
                   />
                 )}
               </div>
@@ -588,6 +626,7 @@ export default function Tasks({ tasks, setTasks, lists, activeListId, onListSele
                   isEditing={editingId === task.id}
                   onStartEdit={() => setEditingId(task.id)}
                   onStopEdit={() => setEditingId(null)}
+                  containerRef={tasksPanelRef}
                 />
               ))}
             </div>
@@ -611,6 +650,7 @@ export default function Tasks({ tasks, setTasks, lists, activeListId, onListSele
                   isEditing={editingId === task.id}
                   onStartEdit={() => setEditingId(task.id)}
                   onStopEdit={() => setEditingId(null)}
+                  containerRef={tasksPanelRef}
                 />
               ))}
             </div>
@@ -631,14 +671,16 @@ type TaskRowProps = {
   isEditing: boolean;
   onStartEdit: () => void;
   onStopEdit: () => void;
+  containerRef: { current: HTMLElement | null };
 };
 
-function TaskRow({ task, onToggle, onDelete, onUpdate, isEditing, onStartEdit, onStopEdit }: TaskRowProps) {
+function TaskRow({ task, onToggle, onDelete, onUpdate, isEditing, onStartEdit, onStopEdit, containerRef }: TaskRowProps) {
   // Detailed edit states (Title, Date, Recurrence)
   const [editTitle, setEditTitle]           = useState(task.title);
   const [editDueDate, setEditDueDate]       = useState<string | null>(task.dueDate);
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceType>(task.recurrence);
   const [showRowDatePicker, setShowRowDatePicker] = useState(false);
+  const [showTaskSchedule, setShowTaskSchedule] = useState(false);
   const [showTaskMenu, setShowTaskMenu] = useState(false);
   const rowDatePickerRef = useRef<HTMLDivElement>(null);
   const taskMenuRef = useRef<HTMLDivElement>(null);
@@ -668,6 +710,8 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, isEditing, onStartEdit, o
     }
     onStopEdit();
   }
+
+  const hasTaskMeta = Boolean(task.dueDate || (!task.completed && task.recurrence));
 
   if (isEditing) {
     return (
@@ -716,6 +760,7 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, isEditing, onStartEdit, o
                 recurrence={editRecurrence}
                 onRecurrenceChange={setEditRecurrence}
                 onClose={() => setShowRowDatePicker(false)}
+                containerRef={containerRef}
               />
             )}
           </div>
@@ -744,18 +789,19 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, isEditing, onStartEdit, o
   }
 
   return (
-    <div 
-      draggable
-      onDragStart={(e) => {
-        e.dataTransfer.setData("taskId", task.id);
-        e.dataTransfer.effectAllowed = "move";
-      }}
-      className="group flex items-start gap-3 py-2.5 px-3 rounded-xl border border-transparent hover:border-slate-100 hover:bg-slate-50/50 transition-all cursor-grab active:cursor-grabbing"
-    >
+    <>
+      <div 
+        draggable
+        onDragStart={(e) => {
+          e.dataTransfer.setData("taskId", task.id);
+          e.dataTransfer.effectAllowed = "move";
+        }}
+        className={`task-row group flex gap-3 py-2.5 px-3 rounded-xl border border-transparent transition-all cursor-grab active:cursor-grabbing ${hasTaskMeta ? "items-start" : "items-center"}`}
+      >
       {/* Complete Task checkbox */}
       <button
         onClick={() => onToggle(task.id)}
-        className={`mt-0.5 flex-shrink-0 w-4.5 h-4.5 rounded-full border flex items-center justify-center transition-all ${
+        className={`${hasTaskMeta ? "mt-0.5" : ""} h-5 w-5 flex-shrink-0 rounded-full border flex items-center justify-center transition-all ${
           task.completed
             ? "bg-emerald-600 border-emerald-600 text-white"
             : "border-slate-300 hover:border-slate-400 bg-white"
@@ -765,24 +811,33 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, isEditing, onStartEdit, o
       </button>
 
       {/* Task Details */}
-      <div className="flex-1 min-w-0" onDoubleClick={onStartEdit}>
-        <p className={`text-sm font-semibold truncate ${task.completed ? "text-slate-400 line-through" : "text-slate-800"}`}>
+      <div className={`min-w-0 flex-1 ${hasTaskMeta ? "" : "flex h-5 items-center"}`} onDoubleClick={onStartEdit}>
+        <p className={`${hasTaskMeta ? "" : "leading-5"} truncate text-sm font-semibold ${task.completed ? "text-slate-400 line-through" : "text-slate-800"}`}>
           {task.title}
         </p>
         
         {/* Indicators beneath the title (Due Date & Recurrence) */}
         <div className="flex items-center gap-2 mt-1">
           {task.dueDate && (
-            <span className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md ${
+            <button
+              type="button"
+              title="Edit due date"
+              onClick={(event) => {
+                event.stopPropagation();
+                setEditDueDate(task.dueDate);
+                setEditRecurrence(task.recurrence);
+                setShowTaskSchedule(true);
+              }}
+              className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md transition-colors hover:opacity-80 ${
               task.completed 
                 ? "bg-slate-100 text-slate-400" 
-                : "bg-blue-50 text-blue-600"
+                : "task-date-pill"
             }`}>
               {getDateLabel(task.dueDate)}
-            </span>
+            </button>
           )}
           {!task.completed && task.recurrence && (
-            <div className="flex items-center gap-1 text-[10px] font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded-md">
+            <div className="task-date-pill-bg flex items-center gap-1 px-1.5 py-0.5 text-[10px] font-bold text-emerald-600 rounded-md">
               <Repeat size={10} strokeWidth={2.5} />
               <span className="capitalize">{task.recurrence}</span>
             </div>
@@ -791,18 +846,18 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, isEditing, onStartEdit, o
       </div>
 
       {/* Task actions */}
-      <div className="relative shrink-0 ml-1" ref={taskMenuRef}>
+      <div className={`relative ml-1 shrink-0 ${hasTaskMeta ? "" : "h-5"}`} ref={taskMenuRef}>
         <button
           onClick={() => setShowTaskMenu(value => !value)}
           aria-label="Task options"
           aria-expanded={showTaskMenu}
           aria-haspopup="menu"
-          className="p-2 text-slate-400 hover:text-slate-800 hover:bg-slate-100 rounded-lg transition-all"
+          className={`${hasTaskMeta ? "p-2" : "h-5 w-5 p-0"} rounded-lg text-slate-400 transition-all hover:bg-slate-100 hover:text-slate-800`}
         >
           <MoreVertical size={17} strokeWidth={2.5} />
         </button>
         {showTaskMenu && (
-          <div className="absolute right-0 top-full z-30 mt-1 w-36 rounded-xl border border-slate-200 bg-white py-1 shadow-lg" role="menu">
+          <div className="absolute right-0 top-full z-30 mt-1 w-36 origin-top-right rounded-xl border border-slate-200 bg-white py-1 shadow-lg animate-in fade-in zoom-in-95 slide-in-from-top-1 duration-150" role="menu">
             <button
               onClick={() => { setShowTaskMenu(false); onStartEdit() }}
               className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-50"
@@ -822,6 +877,21 @@ function TaskRow({ task, onToggle, onDelete, onUpdate, isEditing, onStartEdit, o
           </div>
         )}
       </div>
-    </div>
+      </div>
+
+      {showTaskSchedule && (
+        <CustomDatePicker
+          value={editDueDate}
+          onChange={setEditDueDate}
+          recurrence={editRecurrence}
+          onRecurrenceChange={setEditRecurrence}
+          onClose={() => {
+            onUpdate(task.id, { dueDate: editDueDate, recurrence: editRecurrence });
+            setShowTaskSchedule(false);
+          }}
+          containerRef={containerRef}
+        />
+      )}
+    </>
   );
 }

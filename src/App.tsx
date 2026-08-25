@@ -53,6 +53,7 @@ function App() {
   const [lists, setLists]       = useState<TaskList[]>(DEFAULT_LISTS)
   const [calendars, setCalendars] = useState<UserCalendar[]>(DEFAULT_CALENDARS)
   const [events, setEvents]     = useState<UserEvent[]>([])
+  const [calendarDate, setCalendarDate] = useState(() => new Date())
 
   useEffect(() => {
     let mounted = true
@@ -253,6 +254,8 @@ function App() {
           isDarkMode={isDarkMode}
           onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
           onLogout={handleLogout}
+          onSelectDate={setCalendarDate}
+          username={user.user_metadata?.user_name ?? user.user_metadata?.full_name ?? user.email ?? "Account"}
         />
       </div>
 
@@ -270,34 +273,35 @@ function App() {
             visibleCalendarIds={visibleCalendarIds}
             onToggleTasks={() => setIsTasksOpen(prev => !prev)}
             isTasksOpen={isTasksOpen}
+            selectedDate={calendarDate}
           />
         </div>
 
         {/* Tasks Panel Overlay and Drawer */}
-        {isTasksOpen && (
-          <>
-            <div
-              className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-30 lg:hidden transition-opacity"
-              onClick={() => setIsTasksOpen(false)}
-            />
-            <div className={`
-              fixed inset-y-0 right-0 z-40 w-90 max-w-[85vw] bg-white border-l border-slate-200/80 transform transition-transform duration-300 ease-in-out lg:relative lg:transform-none lg:z-auto lg:w-85 shrink-0 flex
-              ${isTasksOpen ? "translate-x-0" : "translate-x-full"}
-            `}>
-                <Tasks
-                  tasks={tasks}
-                  setTasks={setTasks}
-                  lists={lists}
-                  activeListId={activeListId}
-                  onListSelect={setActiveListId}
-                  onAddList={addList}
-                  onDeleteList={deleteList}
-                  onRenameList={renameList}
-                  onCloseTasksMobile={() => setIsTasksOpen(false)}
-                />
-            </div>
-          </>
-        )}
+        <>
+          <div
+            className={`fixed inset-0 z-30 bg-slate-900/40 backdrop-blur-xs transition-opacity duration-300 lg:hidden ${
+              isTasksOpen ? "opacity-100" : "pointer-events-none opacity-0"
+            }`}
+            onClick={() => setIsTasksOpen(false)}
+          />
+          <div className={`
+            fixed inset-y-0 right-0 z-40 w-full max-w-none bg-white border-l border-slate-200/80 transform transition-transform duration-300 ease-in-out lg:relative lg:transform-none lg:z-auto lg:w-85 shrink-0 flex
+            ${isTasksOpen ? "translate-x-0" : "translate-x-full lg:hidden"}
+          `}>
+              <Tasks
+                tasks={tasks}
+                setTasks={setTasks}
+                lists={lists}
+                activeListId={activeListId}
+                onListSelect={setActiveListId}
+                onAddList={addList}
+                onDeleteList={deleteList}
+                onRenameList={renameList}
+                onCloseTasksMobile={() => setIsTasksOpen(false)}
+              />
+          </div>
+        </>
 
       </div>
 

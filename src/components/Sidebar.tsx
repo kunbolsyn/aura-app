@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { CalendarDays, Settings, Plus, ChevronLeft, ChevronRight, Check, Edit3, Trash2, Moon, LogOut } from "lucide-react";
+import { CalendarDays, Settings, Plus, ChevronLeft, ChevronRight, Check, MoreVertical, Pencil, Trash2, Moon, LogOut } from "lucide-react";
 import type { UserCalendar, CalendarColor } from "../types";
 
 type SidebarProps = {
@@ -12,6 +12,8 @@ type SidebarProps = {
   isDarkMode: boolean;
   onToggleDarkMode: () => void;
   onLogout: () => void;
+  onSelectDate: (date: Date) => void;
+  username: string;
 }
 
 const CALENDAR_COLORS: CalendarColor[] = [
@@ -40,7 +42,7 @@ const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
 // ─── Mini Calendar ────────────────────────────────────────────────────────────
 
-function MiniCalendar() {
+function MiniCalendar({ onSelectDate }: { onSelectDate: (date: Date) => void }) {
   const [date, setDate] = useState(new Date())
   const today = new Date()
   const year  = date.getFullYear()
@@ -87,7 +89,7 @@ function MiniCalendar() {
             month === today.getMonth() &&
             year === today.getFullYear()
           return (
-            <div key={i} className={`text-center text-xs py-1 font-semibold rounded-lg cursor-pointer transition-all ${
+            <button key={i} type="button" onClick={() => onSelectDate(new Date(year, month + (cell.type === 'prev' ? -1 : cell.type === 'next' ? 1 : 0), cell.day))} className={`w-full text-center text-xs py-1 font-semibold rounded-lg cursor-pointer transition-all ${
               isToday
                 ? 'bg-blue-600 text-white font-bold shadow-xs shadow-blue-600/30'
                 : cell.type === 'current'
@@ -95,7 +97,7 @@ function MiniCalendar() {
                 : 'text-slate-300'
             }`}>
               {cell.day}
-            </div>
+            </button>
           )
         })}
       </div>
@@ -115,6 +117,8 @@ function Sidebar({
   isDarkMode,
   onToggleDarkMode,
   onLogout,
+  onSelectDate,
+  username,
 }: SidebarProps) {
   // Inline editing calendars
   const [editingCalId, setEditingCalId]     = useState<string | null>(null)
@@ -125,7 +129,9 @@ function Sidebar({
   const [newCalName, setNewCalName]         = useState('')
   const [newCalColor, setNewCalColor]       = useState<UserCalendar['color']>('blue')
   const [settingsOpen, setSettingsOpen]     = useState(false)
+  const [calendarMenuId, setCalendarMenuId] = useState<string | null>(null)
   const settingsRef = useRef<HTMLDivElement>(null)
+  const calendarMenuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     function closeSettings(event: MouseEvent) {
@@ -133,6 +139,14 @@ function Sidebar({
     }
     document.addEventListener('mousedown', closeSettings)
     return () => document.removeEventListener('mousedown', closeSettings)
+  }, [])
+
+  useEffect(() => {
+    function closeCalendarMenu(event: MouseEvent) {
+      if (!calendarMenuRef.current?.contains(event.target as Node)) setCalendarMenuId(null)
+    }
+    document.addEventListener('mousedown', closeCalendarMenu)
+    return () => document.removeEventListener('mousedown', closeCalendarMenu)
   }, [])
 
   useEffect(() => {
@@ -169,7 +183,7 @@ function Sidebar({
 
       {/* Mini calendar */}
       <div className="px-4">
-        <MiniCalendar />
+        <MiniCalendar onSelectDate={onSelectDate} />
       </div>
 
       {/* Calendars section */}
@@ -193,43 +207,19 @@ function Sidebar({
 
             if (isEditing) {
               return (
-                <div key={cal.id} className="flex flex-col gap-2 bg-white border border-slate-200 rounded-xl p-2.5 shadow-xs">
+                <div key={cal.id} className="w-full px-2 py-1.5">
                   <input
                     autoFocus
                     value={editCalName}
                     onChange={e => setEditCalName(e.target.value)}
+                    onBlur={() => submitRenameCalendar(cal.id)}
                     onKeyDown={e => {
                       if (e.key === 'Enter') submitRenameCalendar(cal.id)
                       if (e.key === 'Escape') setEditingCalId(null)
                     }}
                     placeholder="Calendar name..."
-                    className="text-xs font-semibold border border-slate-200 rounded-lg px-2 py-1.5 outline-none text-slate-800 placeholder:text-slate-300"
+                    className="w-full rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-xs font-semibold text-slate-800 outline-none placeholder:text-slate-300 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
                   />
-                  <div className="flex gap-1.5 flex-wrap">
-                    {CALENDAR_COLORS.map(color => (
-                      <button
-                        key={color}
-                        onClick={() => setEditCalColor(color)}
-                        className={`w-4 h-4 rounded-full ${COLOR_DOT[color]} transition-transform ${
-                          editCalColor === color ? 'scale-125 ring-2 ring-offset-1 ring-slate-400' : 'opacity-80 hover:opacity-100'
-                        }`}
-                      />
-                    ))}
-                  </div>
-                  <div className="flex gap-1 justify-end mt-1">
-                    <button
-                      onClick={() => setEditingCalId(null)}
-                      className="text-[10px] font-bold text-slate-500 hover:bg-slate-50 px-2 py-1 rounded-lg"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={() => submitRenameCalendar(cal.id)}
-                      className="text-[10px] font-bold text-white bg-blue-600 hover:bg-blue-700 px-2.5 py-1 rounded-lg shadow-xs"
-                    >
-                      Save
-                    </button>
-                  </div>
                 </div>
               )
             }
@@ -237,7 +227,7 @@ function Sidebar({
             return (
               <div
                 key={cal.id}
-                className="group flex items-center justify-between px-3 py-1.5 rounded-xl hover:bg-slate-200/50 transition-all w-full"
+                className="group flex items-center justify-between px-2 py-1.5 rounded-xl hover:bg-slate-200/50 transition-all w-full"
               >
                 <button
                   onClick={() => onToggleCalendar(cal.id)}
@@ -253,23 +243,32 @@ function Sidebar({
                   <span className="text-sm font-semibold text-slate-700 text-left truncate">{cal.name}</span>
                 </button>
 
-                <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity text-slate-400">
+                <div className="relative" ref={calendarMenuId === cal.id ? calendarMenuRef : undefined}>
                   <button
-                    onClick={() => {
-                      setEditCalName(cal.name)
-                      setEditCalColor(cal.color)
-                      setEditingCalId(cal.id)
-                    }}
-                    className="p-1 hover:bg-slate-200 rounded-lg transition-all"
+                    type="button"
+                    onClick={() => setCalendarMenuId(calendarMenuId === cal.id ? null : cal.id)}
+                    aria-label={`Options for ${cal.name}`}
+                    aria-expanded={calendarMenuId === cal.id}
+                    className="p-1 text-slate-400 hover:text-slate-800 hover:bg-slate-200 rounded-lg transition-all"
                   >
-                    <Edit3 size={12} strokeWidth={2.5} />
+                    <MoreVertical size={15} strokeWidth={2.5} />
                   </button>
-                  <button
-                    onClick={() => onDeleteCalendar(cal.id)}
-                    className="p-1 hover:bg-rose-500 hover:text-white rounded-lg transition-all"
-                  >
-                    <Trash2 size={12} strokeWidth={2.5} />
-                  </button>
+                  {calendarMenuId === cal.id && (
+                    <div className="absolute right-0 top-full mt-1 z-30 w-48 bg-white border border-slate-200 rounded-xl p-1.5 shadow-xl animate-in fade-in zoom-in-95 duration-150">
+                      <button type="button" onClick={() => { setEditCalName(cal.name); setEditCalColor(cal.color); setEditingCalId(cal.id); setCalendarMenuId(null) }} className="w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-xs font-bold text-slate-700 hover:bg-slate-50 transition-colors"><Pencil size={13} strokeWidth={2.5} />Rename</button>
+                      <button type="button" onClick={() => { onDeleteCalendar(cal.id); setCalendarMenuId(null) }} className="w-full flex items-center gap-2 text-left px-3 py-2 rounded-lg text-xs font-bold text-rose-600 hover:bg-rose-50 transition-colors"><Trash2 size={13} strokeWidth={2.5} />Delete</button>
+                      <div className="mt-1 border-t border-slate-100 pt-2 px-2 pb-1">
+                        <p className="mb-1.5 text-[10px] font-extrabold uppercase tracking-wider text-slate-400">Colour</p>
+                        <div className="flex flex-nowrap gap-2">
+                          {CALENDAR_COLORS.map(color => (
+                            <button key={color} type="button" onClick={() => onUpdateCalendar(cal.id, cal.name, color)} aria-label={`Use ${color}`} className={`h-5 w-5 shrink-0 rounded-full ${COLOR_DOT[color]} flex items-center justify-center transition-transform hover:scale-110`}>
+                              {cal.color === color && <Check size={12} className="text-white" strokeWidth={3.5} />}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             )
@@ -320,11 +319,11 @@ function Sidebar({
       </div>
 
       {/* Settings */}
-      <div className="mt-auto px-4 pt-4 relative" ref={settingsRef}>
+      <div className="mt-auto px-4 pt-1 relative" ref={settingsRef}>
         {settingsOpen && (
-          <div className="absolute bottom-full left-4 right-4 mb-2 z-50 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150">
+          <div className="absolute bottom-full left-4 right-4 mb-1 z-50 bg-white border border-slate-200 rounded-2xl p-1.5 shadow-xl animate-in fade-in slide-in-from-bottom-2 duration-150">
             <div className="px-3 py-2.5 border-b border-slate-100 mb-1">
-              <p className="text-xs font-extrabold text-slate-800">Your account</p>
+              <p className="text-xs font-extrabold text-slate-800">{username}</p>
               <p className="text-[11px] text-slate-400 mt-0.5">Local workspace</p>
             </div>
             <button

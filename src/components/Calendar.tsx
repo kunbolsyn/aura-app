@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from "react"
-import { ChevronLeft, ChevronRight, ListTodo, Plus, CalendarDays, MapPin, AlignLeft, Clock, X } from "lucide-react"
+import { ChevronLeft, ChevronRight, ListTodo, Plus, CalendarDays, MapPin, AlignLeft, Clock, X, Pencil, Trash2 } from "lucide-react"
 import type { UserEvent, UserCalendar, Task } from "../types"
+import { CalendarDateTimePicker, OptionMenu } from "./PickerControls"
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -22,6 +23,7 @@ type Props = {
   visibleCalendarIds: string[]
   onToggleTasks?: () => void
   isTasksOpen?: boolean
+  selectedDate?: Date
 }
 
 type PopupData = {
@@ -40,6 +42,15 @@ const COLOR_EVENT: Record<string, string> = {
   orange: 'bg-amber-50 border-amber-500 text-amber-800 hover:bg-amber-100/70',
   purple: 'bg-violet-50 border-violet-500 text-violet-800 hover:bg-violet-100/70',
   teal:   'bg-cyan-50 border-cyan-500 text-cyan-800 hover:bg-cyan-100/70',
+}
+
+const COLOR_SURFACE: Record<string, string> = {
+  blue:   'bg-blue-600',
+  green:  'bg-emerald-600',
+  red:    'bg-rose-600',
+  orange: 'bg-orange-600',
+  purple: 'bg-violet-600',
+  teal:   'bg-cyan-600',
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -112,11 +123,17 @@ type EventPopupProps = {
   calendars: UserCalendar[]
   event?: UserEvent
   onSave: (event: UserEvent) => void
-  onDelete?: (eventId: string) => void
   onClose: () => void
 }
 
-function EventPopup({ data, calendars, event, onSave, onDelete, onClose }: EventPopupProps) {
+function getSafePopupPosition(x: number, y: number, width: number, height: number) {
+  return {
+    top: Math.max(16, Math.min(y, window.innerHeight - height - 16)),
+    left: Math.max(16, Math.min(x, window.innerWidth - width - 16)),
+  }
+}
+
+function EventPopup({ data, calendars, event, onSave, onClose }: EventPopupProps) {
   const [title, setTitle]         = useState(event?.title ?? '')
   const [calendarId, setCalendarId] = useState(event?.calendarId ?? calendars[0]?.id ?? '')
   const [startDate, setStartDate] = useState(event?.startDate ?? data.startDate)
@@ -145,9 +162,7 @@ function EventPopup({ data, calendars, event, onSave, onDelete, onClose }: Event
 
       <div
         className="fixed z-50 bg-white border border-slate-200 rounded-3xl shadow-xl p-5 w-[min(20rem,calc(100vw-2rem))] animate-in fade-in zoom-in-95 duration-100"
-        style={event
-          ? { top: '50%', left: '50%', transform: 'translate(-50%, -50%)' }
-          : { top: Math.max(16, data.y ?? 96), left: Math.max(16, Math.min(data.x ?? 120, window.innerWidth - 336)) }}
+        style={getSafePopupPosition(data.x ?? 120, data.y ?? 96, 320, 430)}
       >
         <div className="flex items-center justify-between mb-4">
           <span className="text-xs font-bold text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
@@ -164,39 +179,26 @@ function EventPopup({ data, calendars, event, onSave, onDelete, onClose }: Event
           value={title}
           onChange={e => setTitle(e.target.value)}
           onKeyDown={e => { if (e.key === 'Enter') handleSave(); if (e.key === 'Escape') onClose() }}
-          className="w-full text-base text-slate-900 border border-slate-200 rounded-xl px-3 py-2 mb-4 outline-none placeholder:text-slate-400 font-bold focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
+          className="w-full text-base text-slate-900 border border-slate-200 rounded-xl px-3 py-2 mb-4 outline-none placeholder:text-slate-400 font-bold transition-[border-color,box-shadow] duration-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/10"
         />
 
         <div className="flex flex-col gap-3 mb-5">
           <div className="flex items-center gap-2.5">
             <Clock size={14} className="text-slate-400 shrink-0" strokeWidth={2.5} />
             <div className="flex-1 flex flex-col gap-1.5">
-              <input
-                type="datetime-local"
-                value={startDate}
-                onChange={e => setStartDate(e.target.value)}
-                className="text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none focus:border-blue-500 flex-1"
-              />
-              <input
-                type="datetime-local"
-                value={endDate}
-                onChange={e => setEndDate(e.target.value)}
-                className="text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none focus:border-blue-500 flex-1"
-              />
+              <CalendarDateTimePicker label="Start date and time" value={startDate} onChange={setStartDate} />
+              <CalendarDateTimePicker label="End date and time" value={endDate} onChange={setEndDate} />
             </div>
           </div>
 
           <div className="flex items-center gap-2.5">
             <CalendarDays size={14} className="text-slate-400 shrink-0" strokeWidth={2.5} />
-            <select
+            <OptionMenu
               value={calendarId}
-              onChange={e => setCalendarId(e.target.value)}
-              className="text-xs font-bold text-slate-600 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none focus:border-blue-500 flex-1"
-            >
-              {calendars.map(c => (
-                <option key={c.id} value={c.id}>{c.name}</option>
-              ))}
-            </select>
+              onChange={setCalendarId}
+              className="flex-1"
+              options={calendars.map(calendar => ({ value: calendar.id, label: calendar.name, color: calendar.color }))}
+            />
           </div>
 
           <div className="flex items-center gap-2.5">
@@ -205,7 +207,7 @@ function EventPopup({ data, calendars, event, onSave, onDelete, onClose }: Event
               placeholder="Add location (Optional)"
               value={location}
               onChange={e => setLocation(e.target.value)}
-              className="text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none focus:border-blue-500 flex-1 placeholder:text-slate-400"
+              className="text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500 flex-1 placeholder:text-slate-400"
             />
           </div>
 
@@ -216,7 +218,7 @@ function EventPopup({ data, calendars, event, onSave, onDelete, onClose }: Event
               value={description}
               onChange={e => setDescription(e.target.value)}
               rows={2}
-              className="text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none focus:border-blue-500 flex-1 placeholder:text-slate-400 resize-none"
+              className="text-xs font-semibold text-slate-700 border border-slate-200 rounded-xl px-2.5 py-1.5 outline-none transition-[border-color,box-shadow] duration-200 focus:border-blue-500 flex-1 placeholder:text-slate-400 resize-none"
             />
           </div>
         </div>
@@ -228,12 +230,6 @@ function EventPopup({ data, calendars, event, onSave, onDelete, onClose }: Event
           >
             Cancel
           </button>
-          {event && onDelete && <button
-            onClick={() => { if (confirm(`Delete event "${event.title}"?`)) onDelete(event.id) }}
-            className="mr-auto text-xs font-bold text-rose-600 hover:bg-rose-50 px-3 py-2 rounded-xl transition-all"
-          >
-            Delete
-          </button>}
           <button
             onClick={handleSave}
             className="text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-xl shadow-xs transition-all"
@@ -246,7 +242,50 @@ function EventPopup({ data, calendars, event, onSave, onDelete, onClose }: Event
   )
 }
 
+function EventDetailsPopup({ event, calendar, anchor, onEdit, onDelete, onClose }: {
+  event: UserEvent
+  calendar?: UserCalendar
+  anchor: PopupAnchor
+  onEdit: () => void
+  onDelete: () => void
+  onClose: () => void
+}) {
+  const start = new Date(event.startDate)
+  const end = new Date(event.endDate)
+  const surface = COLOR_SURFACE[calendar?.color ?? 'blue']
+
+  return (
+    <>
+      <div className="fixed inset-0 z-40" onClick={onClose} />
+      <div className="fixed z-50 w-[min(22rem,calc(100vw-2rem))] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl animate-in fade-in zoom-in-95 duration-150" style={getSafePopupPosition(anchor.x, anchor.y, 352, 360)}>
+        <div className={`relative h-16 ${surface} p-4 text-white`}>
+          <div className="flex items-start justify-between">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-white/75">{calendar?.name ?? 'Calendar event'}</span>
+            <button onClick={onClose} aria-label="Close event details" className="rounded-lg p-1 text-white/80 transition hover:bg-white/15 hover:text-white">
+              <X size={16} strokeWidth={2.5} />
+            </button>
+          </div>
+        </div>
+        <div className="p-5">
+          <h2 className="text-lg font-extrabold leading-tight text-slate-900">{event.title}</h2>
+          <div className="mt-4 flex flex-col gap-3 text-xs font-semibold text-slate-600">
+            <div className="flex items-start gap-2.5"><Clock size={15} className="mt-0.5 shrink-0 text-slate-400" /><span>{start.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}<br />{start.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })} – {end.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })}</span></div>
+            {event.location && <div className="flex items-start gap-2.5"><MapPin size={15} className="mt-0.5 shrink-0 text-slate-400" /><span>{event.location}</span></div>}
+            {event.description && <div className="flex items-start gap-2.5"><AlignLeft size={15} className="mt-0.5 shrink-0 text-slate-400" /><span className="whitespace-pre-wrap">{event.description}</span></div>}
+          </div>
+          <div className="mt-5 flex justify-end gap-2 border-t border-slate-100 pt-4">
+            <button onClick={onDelete} className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-bold text-rose-600 transition hover:bg-rose-50"><Trash2 size={14} />Delete</button>
+            <button onClick={onEdit} className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white transition hover:bg-blue-700"><Pencil size={14} />Edit event</button>
+          </div>
+        </div>
+      </div>
+    </>
+  )
+}
+
 // ─── Week View ────────────────────────────────────────────────────────────────
+
+type PopupAnchor = { x: number; y: number }
 
 type WeekViewProps = {
   weekDays: Date[]
@@ -255,7 +294,7 @@ type WeekViewProps = {
   calendars: UserCalendar[]
   visibleCalendarIds: string[]
   onCreateEvent: (popup: PopupData) => void
-  onSelectEvent: (event: UserEvent) => void
+  onSelectEvent: (event: UserEvent, anchor: PopupAnchor) => void
   onMoveEvent: (eventId: string, date: Date, hour: number) => void
   onDropTask: (taskId: string, date: Date, hour: number) => void
   onToggleTasks?: () => void
@@ -332,7 +371,8 @@ function WeekView({
       return
     }
     const popupX = Math.min(e.clientX + 12, window.innerWidth  - 340)
-    const popupY = Math.min(e.clientY - 40, window.innerHeight - 380)
+    // Keep the editor above the drag target so it does not cover the selected time slot.
+    const popupY = Math.max(16, Math.min(e.clientY - 260, window.innerHeight - 440))
     onCreateEvent({
       startDate: toDateTimeLocal(dragRange.day, dragRange.startHour),
       endDate:   toDateTimeLocal(dragRange.day, dragRange.endHour),
@@ -379,7 +419,7 @@ function WeekView({
       {/* Day headers */}
       <div
         className="calendar-week-columns grid border-b border-slate-200 shrink-0 bg-white"
-        style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}
+        style={{ gridTemplateColumns: `60px repeat(${weekDays.length}, minmax(0, 1fr))` }}
       >
         <div className="border-r border-slate-100/30" />
         {weekDays.map((day, i) => (
@@ -401,7 +441,7 @@ function WeekView({
       {/* All-day tasks row */}
       <div
         className="calendar-week-columns grid border-b border-slate-200 shrink-0 bg-slate-50"
-        style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}
+        style={{ gridTemplateColumns: `60px repeat(${weekDays.length}, minmax(0, 1fr))` }}
       >
         <div className="border-r border-slate-100/30 flex items-center justify-end pr-2.5 py-1.5">
           {onToggleTasks ? (
@@ -429,7 +469,7 @@ function WeekView({
       <div className="calendar-week-scroll flex-1 overflow-y-scroll" ref={scrollRef}>
         <div
           className="grid relative"
-          style={{ gridTemplateColumns: '60px repeat(7, minmax(0, 1fr))' }}
+          style={{ gridTemplateColumns: `60px repeat(${weekDays.length}, minmax(0, 1fr))` }}
         >
           {/* Time labels */}
           <div className="border-r border-slate-100/30 bg-white">
@@ -507,7 +547,7 @@ function WeekView({
                       key={event.id}
                       draggable
                       onMouseDown={e => e.stopPropagation()}
-                      onClick={e => { e.stopPropagation(); onSelectEvent(event) }}
+                      onClick={e => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); onSelectEvent(event, { x: rect.left, y: rect.bottom + 8 }) }}
                       onDragStart={e => { e.stopPropagation(); setDraggedEventId(event.id); e.dataTransfer.setData('eventId', event.id); e.dataTransfer.effectAllowed = 'move' }}
                       onDragEnd={() => setDraggedEventId(null)}
                       className={`absolute left-1 right-1 rounded-xl border-l-4 px-2 py-1 text-xs font-bold overflow-hidden cursor-grab shadow-2xs z-10 transition-all ${draggedEventId === event.id ? 'bg-slate-200 border-slate-400 text-slate-500 opacity-80' : COLOR_EVENT[color]}`}
@@ -540,7 +580,7 @@ type DayViewProps = {
   calendars: UserCalendar[]
   visibleCalendarIds: string[]
   onCreateEvent: (popup: PopupData) => void
-  onSelectEvent: (event: UserEvent) => void
+  onSelectEvent: (event: UserEvent, anchor: PopupAnchor) => void
   onMoveEvent: (eventId: string, date: Date, hour: number) => void
   onDropTask: (taskId: string, date: Date, hour: number) => void
 }
@@ -580,7 +620,7 @@ type MonthViewProps = {
   calendars: UserCalendar[]
   visibleCalendarIds: string[]
   onSelectDate: (date: Date) => void
-  onSelectEvent: (event: UserEvent) => void
+  onSelectEvent: (event: UserEvent, anchor: PopupAnchor) => void
 }
 
 function MonthView({ currentDate, events, tasks, calendars, visibleCalendarIds, onSelectDate, onSelectEvent }: MonthViewProps) {
@@ -623,11 +663,11 @@ function MonthView({ currentDate, events, tasks, calendars, visibleCalendarIds, 
               key={i}
               onClick={() => onSelectDate(day)}
               className={`border-r border-b border-slate-100 p-1.5 flex flex-col gap-1 min-h-0 cursor-pointer hover:bg-slate-50 transition-colors ${
-                !isCurrentMonth ? 'bg-slate-50/30' : ''
+                !isCurrentMonth ? 'month-outside-day bg-slate-50/30' : ''
               }`}
             >
               <div className={`text-xs font-bold w-6 h-6 flex items-center justify-center rounded-lg mb-1 ${
-                isToday ? 'bg-blue-600 text-white shadow-xs' : isCurrentMonth ? 'text-slate-700' : 'text-slate-300'
+                isToday ? 'bg-blue-600 text-white shadow-xs' : isCurrentMonth ? 'text-slate-700' : 'month-outside-day-number text-slate-300'
               }`}>
                 {day.getDate()}
               </div>
@@ -635,7 +675,7 @@ function MonthView({ currentDate, events, tasks, calendars, visibleCalendarIds, 
                 {dayEvents.map(event => (
                   <div
                     key={event.id}
-                    onClick={e => { e.stopPropagation(); onSelectEvent(event) }}
+                    onClick={e => { e.stopPropagation(); const rect = e.currentTarget.getBoundingClientRect(); onSelectEvent(event, { x: rect.left, y: rect.bottom + 8 }) }}
                     className={`text-[9px] font-bold px-1.5 py-0.5 rounded-md truncate border-l-2 ${COLOR_EVENT[getCalendarColor(event.calendarId)]}`}
                   >
                     {event.title}
@@ -670,25 +710,25 @@ function YearView({ currentDate, onSelectMonth }: YearViewProps) {
   const months = Array.from({ length: 12 }, (_, i) => new Date(year, i, 1))
 
   return (
-    <div className="flex-1 overflow-y-auto bg-white p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 max-w-7xl mx-auto">
+    <div className="flex-1 overflow-y-auto custom-scrollbar bg-white p-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 w-full">
         {months.map((monthDate, i) => {
           const days = getMonthDays(year, i)
           return (
             <div
               key={i}
               onClick={() => onSelectMonth(monthDate)}
-              className="p-4 rounded-2xl hover:bg-slate-50 cursor-pointer transition-all border border-transparent hover:border-slate-100"
+              className="p-2 rounded-2xl hover:bg-slate-50 cursor-pointer transition-all border border-transparent hover:border-slate-100"
             >
-              <h3 className="text-sm font-extrabold text-slate-800 mb-4 px-1">{monthDate.toLocaleDateString('default', { month: 'long' })}</h3>
-              <div className="grid grid-cols-7 gap-y-2">
+              <h3 className="text-base font-extrabold text-slate-800 mb-2 px-1">{monthDate.toLocaleDateString('en-GB', { month: 'long' })}</h3>
+              <div className="grid grid-cols-7 gap-y-1">
                 {['M', 'T', 'W', 'T', 'F', 'S', 'S'].map((d, idx) => (
-                  <div key={idx} className="text-[8px] font-bold text-slate-300 text-center">{d}</div>
+                  <div key={idx} className="text-[10px] font-bold text-slate-300 text-center">{d}</div>
                 ))}
                 {days.map((day, idx) => (
                   <div
                     key={idx}
-                    className={`text-[9px] font-bold text-center py-1 ${
+                    className={`text-[11px] font-bold text-center py-1 ${
                       day.getMonth() === i ? 'text-slate-600' : 'text-slate-200'
                     } ${isSameDay(day, new Date()) ? 'text-blue-600 font-black' : ''}`}
                   >
@@ -706,7 +746,7 @@ function YearView({ currentDate, onSelectMonth }: YearViewProps) {
 
 // ─── Calendar ─────────────────────────────────────────────────────────────────
 
-function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalendarIds, onToggleTasks, isTasksOpen }: Props) {
+function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalendarIds, onToggleTasks, isTasksOpen, selectedDate }: Props) {
   const [ready, setReady] = useState(false)
 
   // Defer rendering of the full calendar grid to improve initial paint and perceived performance.
@@ -727,6 +767,12 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
   const [currentDate, setCurrentDate] = useState(new Date())
   const [popup, setPopup]           = useState<PopupData | null>(null)
   const [selectedEvent, setSelectedEvent] = useState<UserEvent | null>(null)
+
+  useEffect(() => {
+    if (!selectedDate) return
+    setCurrentDate(new Date(selectedDate))
+    setView('day')
+  }, [selectedDate])
 
   const weekDays = getWeekDays(currentDate)
 
@@ -761,9 +807,12 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
     setSelectedEvent(null)
   }
 
-  function selectEvent(event: UserEvent) {
+  const [eventAnchor, setEventAnchor] = useState<PopupAnchor>({ x: 120, y: 96 })
+
+  function selectEvent(event: UserEvent, anchor: PopupAnchor) {
     setSelectedEvent(event)
-    setPopup({ startDate: event.startDate, endDate: event.endDate, x: 120, y: 96 })
+    setEventAnchor(anchor)
+    setPopup(null)
   }
 
   function openCreatePopup(nextPopup: PopupData) {
@@ -824,12 +873,12 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
         <span className="text-sm font-extrabold text-slate-900 flex-1 ml-2 md:text-base leading-none">{titleLabel}</span>
 
         {/* View switcher */}
-        <div className="flex bg-slate-100 p-1 rounded-xl shrink-0">
+        <div className="hidden md:flex h-8 bg-slate-100 p-1 rounded-xl shrink-0">
           {(['day', 'week', 'month', 'year'] as View[]).map(v => (
             <button
               key={v}
               onClick={() => setView(v)}
-              className={`px-3 py-1.5 text-xs font-bold rounded-lg transition-all capitalize ${
+              className={`h-6 px-3 py-0 text-xs font-bold rounded-lg transition-all capitalize ${
                 view === v 
                   ? 'bg-white text-blue-600 shadow-2xs' 
                   : 'text-slate-500 hover:text-slate-800'
@@ -840,14 +889,25 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
           ))}
         </div>
 
+        <select
+          value={view}
+          onChange={event => setView(event.target.value as View)}
+          aria-label="Calendar view"
+          className="md:hidden w-24 h-8 rounded-xl border border-slate-200 bg-slate-100 px-2 text-xs font-bold capitalize text-slate-700 outline-none focus:border-blue-500"
+        >
+          {(['day', 'week', 'month', 'year'] as View[]).map(option => (
+            <option key={option} value={option}>{option}</option>
+          ))}
+        </select>
+
         {/* Desktop Task Toggle (Hidden on mobile as header handles it) */}
         {onToggleTasks && (
           <button
             onClick={onToggleTasks}
-            className={`hidden lg:flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-xl transition-all border ${
+            className={`hidden lg:flex h-8 items-center gap-1.5 px-3 text-xs font-bold rounded-xl transition-all ${
               isTasksOpen 
-                ? 'bg-blue-50 text-blue-700 border-blue-200' 
-                : 'bg-white text-slate-600 border-slate-200 hover:border-slate-300 hover:bg-slate-50'
+                ? 'bg-blue-50 text-blue-700' 
+                : 'bg-white text-slate-600 hover:bg-slate-50'
             }`}
           >
             <ListTodo size={14} strokeWidth={2.5} />
@@ -929,8 +989,17 @@ function Calendar({ events, setEvents, tasks, setTasks, calendars, visibleCalend
           event={selectedEvent ?? undefined}
           key={selectedEvent?.id ?? 'new-event'}
           onSave={saveEvent}
-          onDelete={deleteEvent}
-          onClose={() => setPopup(null)}
+          onClose={() => { setPopup(null); setSelectedEvent(null) }}
+        />
+      )}
+      {selectedEvent && !popup && (
+        <EventDetailsPopup
+          event={selectedEvent}
+          calendar={calendars.find(calendar => calendar.id === selectedEvent.calendarId)}
+          anchor={eventAnchor}
+          onEdit={() => setPopup({ startDate: selectedEvent.startDate, endDate: selectedEvent.endDate, x: eventAnchor.x, y: eventAnchor.y })}
+          onDelete={() => deleteEvent(selectedEvent.id)}
+          onClose={() => setSelectedEvent(null)}
         />
       )}
     </div>

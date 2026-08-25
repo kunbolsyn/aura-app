@@ -12,6 +12,27 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+@keyframes aura-pop-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes aura-pop-in-up {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.animate-in {
+  animation: aura-pop-in 160ms ease-out both;
+}
+
+.slide-in-from-top-1 { animation-name: aura-pop-in; }
+.slide-in-from-bottom-1 { animation-name: aura-pop-in-up; }
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-in { animation-duration: 1ms; }
+}
+
 /* The weekly header rows must reserve the time grid's scrollbar width. */
 .calendar-week-columns {
   padding-right: 8px;
@@ -138,6 +159,7 @@ body {
 .aura-dark .aura-app .hover\:bg-slate-100:hover,
 .aura-dark .aura-app .hover\:bg-slate-200:hover,
 .aura-dark .aura-app .hover\:bg-slate-200\/50:hover { background-color: #3c4043; }
+.aura-dark .aura-app .bg-slate-200\/60 { background-color: #3c4043; }
 .aura-dark .aura-app .hover\:bg-white:hover { background-color: #3c4043; }
 .aura-dark .aura-app .hover\:text-slate-800:hover,
 .aura-dark .aura-app .hover\:text-slate-900:hover { color: #ffffff; }
@@ -151,7 +173,9 @@ body {
 }
 .aura-dark .aura-app input::placeholder,
 .aura-dark .aura-app textarea::placeholder { color: #9aa0a6; }
+.aura-dark .aura-app input[type="time"] { color-scheme: dark; }
 .aura-dark .aura-app .task-add-input { background-color: transparent; border-color: transparent; }
+.aura-dark .aura-app .task-add-input:focus { border-color: transparent; box-shadow: none; }
 .aura-dark .aura-app input:focus,
 .aura-dark .aura-app textarea:focus,
 .aura-dark .aura-app select:focus { border-color: #8ab4f8; box-shadow: 0 0 0 3px rgb(138 180 248 / 0.18); }
@@ -169,6 +193,20 @@ body {
 .aura-dark .aura-app .hover\:bg-blue-700:hover { background-color: #8ab4f8; color: #202124; }
 .aura-dark .aura-app .hover\:bg-rose-50:hover { background-color: #4a2529; color: #f28b82; }
 .aura-dark .aura-app .hover\:bg-rose-500:hover { background-color: #a33b45; color: #ffffff; }
+
+/* Keep task date controls quiet on hover instead of using the bright blue accent. */
+.aura-dark .aura-app .task-quick-date:hover,
+.aura-dark .aura-app .task-date-picker-trigger:hover {
+  background-color: #3c4043;
+  border-color: #5f6368;
+  color: #a8c7fa;
+}
+.aura-dark .aura-app .task-list-option:hover {
+  background-color: #3c4043;
+  color: #f1f3f4;
+}
+.aura-dark .aura-app .month-outside-day { background-color: #252629; }
+.aura-dark .aura-app .month-outside-day-number { color: #9aa0a6; }
 
 .aura-dark .aura-app .shadow-xl,
 .aura-dark .aura-app .shadow-2xl,
@@ -217,6 +255,10 @@ body {
 .calendar-week-scroll {
   scrollbar-color: #9aa0a6 #e8eaed;
 }
+.custom-scrollbar {
+  scrollbar-color: #9aa0a6 #e8eaed;
+  scrollbar-width: thin;
+}
 .calendar-week-scroll::-webkit-scrollbar,
 .custom-scrollbar::-webkit-scrollbar { width: var(--calendar-scrollbar-width, 8px); height: 8px; }
 .calendar-week-scroll::-webkit-scrollbar-track,
@@ -230,6 +272,7 @@ body {
 .calendar-half-hour-line { border-color: rgb(95 99 104 / 0.08); }
 
 .aura-dark .calendar-week-scroll { scrollbar-color: #6f7378 #303134; }
+.aura-dark .custom-scrollbar { scrollbar-color: #6f7378 #303134; }
 .aura-dark .calendar-week-scroll::-webkit-scrollbar-track,
 .aura-dark .custom-scrollbar::-webkit-scrollbar-track { background: #303134; }
 .aura-dark .calendar-week-scroll::-webkit-scrollbar-thumb,
@@ -238,6 +281,12 @@ body {
 .aura-dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9aa0a6; }
 .aura-dark .calendar-hour-line { border-color: rgb(218 220 224 / 0.14); }
 .aura-dark .calendar-half-hour-line { border-color: rgb(218 220 224 / 0.07); }
+
+/* Keep day separators invisible in the dark calendar view. */
+.aura-dark .calendar-week .border-slate-100\/30 { border-color: transparent; }
+
+/* Match the light theme's blue selected-view label without a bright pill. */
+.aura-dark .aura-app .bg-white.text-blue-600 { background-color: #202124; color: #8ab4f8; }
 
 .tasks-scroll {
   scrollbar-color: #9aa0a6 #e8eaed;
@@ -251,3 +300,33 @@ body {
 .aura-dark .tasks-scroll::-webkit-scrollbar-track { background: #303134; }
 .aura-dark .tasks-scroll::-webkit-scrollbar-thumb { background: #6f7378; border-color: #303134; }
 .aura-dark .tasks-scroll::-webkit-scrollbar-thumb:hover { background: #9aa0a6; }
+
+.task-row:hover {
+  background-color: #f8fafc;
+  border-color: #e2e8f0;
+}
+
+.task-date-pill {
+  background-color: #e8f0fe;
+  color: #315b9d;
+}
+
+.task-date-pill-bg {
+  background-color: #e8f4ed;
+  color: #16a34a;
+}
+
+.aura-dark .task-row:hover {
+  background-color: #303134;
+  border-color: #45464a;
+}
+
+.aura-dark .task-date-pill {
+  background-color: #3c4043;
+  color: #a8c7fa;
+}
+
+.aura-dark .task-date-pill-bg {
+  background-color: #3c4043;
+  color: #81c995;
+}
