@@ -13,24 +13,42 @@ body {
 }
 
 @keyframes aura-pop-in {
-  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(-4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 @keyframes aura-pop-in-up {
-  from { opacity: 0; transform: translateY(4px) scale(0.98); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
+  from {
+    opacity: 0;
+    transform: translateY(4px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
 }
 
 .animate-in {
   animation: aura-pop-in 160ms ease-out both;
 }
 
-.slide-in-from-top-1 { animation-name: aura-pop-in; }
-.slide-in-from-bottom-1 { animation-name: aura-pop-in-up; }
+.slide-in-from-top-1 {
+  animation-name: aura-pop-in;
+}
+.slide-in-from-bottom-1 {
+  animation-name: aura-pop-in-up;
+}
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-in { animation-duration: 1ms; }
+  .animate-in {
+    animation-duration: 1ms;
+  }
 }
 
 /* The weekly header rows must reserve the time grid's scrollbar width. */
@@ -51,62 +69,135 @@ body {
   background: #0f172a;
 }
 
-.aura-dark .bg-white { background-color: #111827; }
-.aura-dark .bg-slate-50 { background-color: #0f172a; }
-.aura-dark .bg-slate-100 { background-color: #1e293b; }
-.aura-dark .bg-slate-50\/50 { background-color: rgb(30 41 59 / 0.5); }
-.aura-dark .bg-slate-100\/50 { background-color: rgb(30 41 59 / 0.5); }
+.aura-dark .bg-white {
+  background-color: #111827;
+}
+.aura-dark .bg-slate-50 {
+  background-color: #0f172a;
+}
+.aura-dark .bg-slate-100 {
+  background-color: #1e293b;
+}
+.aura-dark .bg-slate-50\/50 {
+  background-color: rgb(30 41 59 / 0.5);
+}
+.aura-dark .bg-slate-100\/50 {
+  background-color: rgb(30 41 59 / 0.5);
+}
 .aura-dark .text-slate-950,
 .aura-dark .text-slate-900,
-.aura-dark .text-slate-800 { color: #f8fafc; }
-.aura-dark .text-slate-700 { color: #cbd5e1; }
-.aura-dark .text-slate-600 { color: #94a3b8; }
+.aura-dark .text-slate-800 {
+  color: #f8fafc;
+}
+.aura-dark .text-slate-700 {
+  color: #cbd5e1;
+}
+.aura-dark .text-slate-600 {
+  color: #94a3b8;
+}
 .aura-dark .border-slate-200,
 .aura-dark .border-slate-200\/80,
-.aura-dark .border-slate-100 { border-color: #334155; }
-.aura-dark .border-slate-200\/40 { border-color: rgb(51 65 85 / 0.4); }
-.aura-dark .hover\:bg-slate-50:hover { background-color: #1e293b; }
-.aura-dark .hover\:bg-white:hover { background-color: #1e293b; }
+.aura-dark .border-slate-100 {
+  border-color: #334155;
+}
+.aura-dark .border-slate-200\/40 {
+  border-color: rgb(51 65 85 / 0.4);
+}
+.aura-dark .hover\:bg-slate-50:hover {
+  background-color: #1e293b;
+}
+.aura-dark .hover\:bg-white:hover {
+  background-color: #1e293b;
+}
 .aura-dark .hover\:bg-slate-100:hover,
 .aura-dark .hover\:bg-slate-200:hover,
-.aura-dark .hover\:bg-slate-200\/50:hover { background-color: #334155; }
-.aura-dark .hover\:bg-slate-50\/50:hover { background-color: #172033; }
+.aura-dark .hover\:bg-slate-200\/50:hover {
+  background-color: #334155;
+}
+.aura-dark .hover\:bg-slate-50\/50:hover {
+  background-color: #172033;
+}
 .aura-dark .hover\:text-slate-800:hover,
-.aura-dark .hover\:text-slate-900:hover { color: #ffffff; }
+.aura-dark .hover\:text-slate-900:hover {
+  color: #ffffff;
+}
 .aura-dark input,
 .aura-dark textarea,
-.aura-dark select { color: #e2e8f0; background-color: #1e293b; }
+.aura-dark select {
+  color: #e2e8f0;
+  background-color: #1e293b;
+}
 .aura-dark input::placeholder,
-.aura-dark textarea::placeholder { color: #64748b; }
+.aura-dark textarea::placeholder {
+  color: #64748b;
+}
 
 /* Keep interactive dark surfaces on the accent instead of washed-out light utilities. */
-.aura-dark .hover\:bg-blue-50:hover { background-color: #2563eb; color: #ffffff; }
-.aura-dark .hover\:bg-blue-100\/70:hover { background-color: #1e40af; }
-.aura-dark .hover\:bg-blue-700:hover { background-color: #1d4ed8; color: #ffffff; }
-.aura-dark .shadow-blue-200 { --tw-shadow-color: rgb(37 99 235 / 0.28); }
-.aura-dark .shadow-blue-600\/30 { --tw-shadow-color: rgb(37 99 235 / 0.3); }
+.aura-dark .hover\:bg-blue-50:hover {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+.aura-dark .hover\:bg-blue-100\/70:hover {
+  background-color: #1e40af;
+}
+.aura-dark .hover\:bg-blue-700:hover {
+  background-color: #1d4ed8;
+  color: #ffffff;
+}
+.aura-dark .shadow-blue-200 {
+  --tw-shadow-color: rgb(37 99 235 / 0.28);
+}
+.aura-dark .shadow-blue-600\/30 {
+  --tw-shadow-color: rgb(37 99 235 / 0.3);
+}
 
 /* The calendar and task panel use native scrollbars. */
 .aura-dark * {
   scrollbar-color: #475569 #0f172a;
   scrollbar-width: thin;
 }
-.aura-dark *::-webkit-scrollbar { width: 8px; height: 8px; }
-.aura-dark *::-webkit-scrollbar-track { background: #0f172a; }
-.aura-dark *::-webkit-scrollbar-thumb { background: #475569; border-radius: 999px; }
-.aura-dark *::-webkit-scrollbar-thumb:hover { background: #2563eb; }
+.aura-dark *::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.aura-dark *::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+.aura-dark *::-webkit-scrollbar-thumb {
+  background: #475569;
+  border-radius: 999px;
+}
+.aura-dark *::-webkit-scrollbar-thumb:hover {
+  background: #2563eb;
+}
 
 /* Correct explicit light surfaces that are used by task controls and menus. */
 .aura-dark .bg-white.border-slate-200,
-.aura-dark .bg-white.border-slate-200\/80 { background-color: #111827; }
-.aura-dark .bg-slate-50\/50.hover\:bg-white:hover { background-color: #1e293b; }
-.aura-dark .hover\:border-slate-100:hover { border-color: #2563eb; }
-.aura-dark .bg-blue-600.shadow-blue-200 { box-shadow: 0 20px 25px -5px rgb(37 99 235 / 0.28), 0 8px 10px -6px rgb(37 99 235 / 0.28); }
+.aura-dark .bg-white.border-slate-200\/80 {
+  background-color: #111827;
+}
+.aura-dark .bg-slate-50\/50.hover\:bg-white:hover {
+  background-color: #1e293b;
+}
+.aura-dark .hover\:border-slate-100:hover {
+  border-color: #2563eb;
+}
+.aura-dark .bg-blue-600.shadow-blue-200 {
+  box-shadow:
+    0 20px 25px -5px rgb(37 99 235 / 0.28),
+    0 8px 10px -6px rgb(37 99 235 / 0.28);
+}
 
 /* Selected calendar view and open task toggle. */
-.aura-dark .bg-white.text-blue-600 { background-color: #1d4ed8; color: #ffffff; }
+.aura-dark .bg-white.text-blue-600 {
+  background-color: #1d4ed8;
+  color: #ffffff;
+}
 .aura-dark .bg-blue-50.text-blue-700,
-.aura-dark .bg-blue-50.text-blue-600 { background-color: #1d4ed8; color: #ffffff; }
+.aura-dark .bg-blue-50.text-blue-600 {
+  background-color: #1d4ed8;
+  color: #ffffff;
+}
 
 /* Muted recurrence indicator for dark surfaces. */
 .aura-dark .bg-emerald-50.text-emerald-600 {
@@ -115,18 +206,48 @@ body {
 }
 
 /* Calendar events use their calendar accent as a vivid, readable surface. */
-.aura-dark .bg-blue-50.border-blue-500.text-blue-800 { background-color: #2563eb; color: #ffffff; }
-.aura-dark .bg-emerald-50.border-emerald-500.text-emerald-800 { background-color: #059669; color: #ffffff; }
-.aura-dark .bg-rose-50.border-rose-500.text-rose-800 { background-color: #e11d48; color: #ffffff; }
-.aura-dark .bg-amber-50.border-amber-500.text-amber-800 { background-color: #d97706; color: #ffffff; }
-.aura-dark .bg-violet-50.border-violet-500.text-violet-800 { background-color: #7c3aed; color: #ffffff; }
-.aura-dark .bg-cyan-50.border-cyan-500.text-cyan-800 { background-color: #0891b2; color: #ffffff; }
-.aura-dark .bg-blue-50.border-blue-500.text-blue-800:hover { background-color: #3b82f6; }
-.aura-dark .bg-emerald-50.border-emerald-500.text-emerald-800:hover { background-color: #10b981; }
-.aura-dark .bg-rose-50.border-rose-500.text-rose-800:hover { background-color: #f43f5e; }
-.aura-dark .bg-amber-50.border-amber-500.text-amber-800:hover { background-color: #f59e0b; }
-.aura-dark .bg-violet-50.border-violet-500.text-violet-800:hover { background-color: #8b5cf6; }
-.aura-dark .bg-cyan-50.border-cyan-500.text-cyan-800:hover { background-color: #06b6d4; }
+.aura-dark .bg-blue-50.border-blue-500.text-blue-800 {
+  background-color: #2563eb;
+  color: #ffffff;
+}
+.aura-dark .bg-emerald-50.border-emerald-500.text-emerald-800 {
+  background-color: #059669;
+  color: #ffffff;
+}
+.aura-dark .bg-rose-50.border-rose-500.text-rose-800 {
+  background-color: #e11d48;
+  color: #ffffff;
+}
+.aura-dark .bg-amber-50.border-amber-500.text-amber-800 {
+  background-color: #d97706;
+  color: #ffffff;
+}
+.aura-dark .bg-violet-50.border-violet-500.text-violet-800 {
+  background-color: #7c3aed;
+  color: #ffffff;
+}
+.aura-dark .bg-cyan-50.border-cyan-500.text-cyan-800 {
+  background-color: #0891b2;
+  color: #ffffff;
+}
+.aura-dark .bg-blue-50.border-blue-500.text-blue-800:hover {
+  background-color: #3b82f6;
+}
+.aura-dark .bg-emerald-50.border-emerald-500.text-emerald-800:hover {
+  background-color: #10b981;
+}
+.aura-dark .bg-rose-50.border-rose-500.text-rose-800:hover {
+  background-color: #f43f5e;
+}
+.aura-dark .bg-amber-50.border-amber-500.text-amber-800:hover {
+  background-color: #f59e0b;
+}
+.aura-dark .bg-violet-50.border-violet-500.text-violet-800:hover {
+  background-color: #8b5cf6;
+}
+.aura-dark .bg-cyan-50.border-cyan-500.text-cyan-800:hover {
+  background-color: #06b6d4;
+}
 
 /* Material-inspired dark theme: charcoal surfaces, strong text hierarchy, and
    explicit interactive states so light utility colors do not leak through. */
@@ -136,33 +257,70 @@ body {
 }
 
 .aura-dark .aura-app,
-.aura-dark .aura-app .bg-slate-50 { background-color: #202124; color: #e8eaed; }
-.aura-dark .aura-app .bg-white { background-color: #292a2d; }
+.aura-dark .aura-app .bg-slate-50 {
+  background-color: #202124;
+  color: #e8eaed;
+}
+.aura-dark .aura-app .bg-white {
+  background-color: #292a2d;
+}
 .aura-dark .aura-app .bg-slate-100,
-.aura-dark .aura-app .bg-slate-100\/50 { background-color: #303134; }
-.aura-dark .aura-app .bg-slate-50\/50 { background-color: rgb(48 49 52 / 0.72); }
+.aura-dark .aura-app .bg-slate-100\/50 {
+  background-color: #303134;
+}
+.aura-dark .aura-app .bg-slate-50\/50 {
+  background-color: rgb(48 49 52 / 0.72);
+}
+.aura-dark .aura-app .calendar-action-button:hover {
+  background-color: #35363a;
+  color: #a8c7fa;
+}
 
 .aura-dark .aura-app .text-slate-950,
 .aura-dark .aura-app .text-slate-900,
-.aura-dark .aura-app .text-slate-800 { color: #f1f3f4; }
-.aura-dark .aura-app .text-slate-700 { color: #dadce0; }
-.aura-dark .aura-app .text-slate-600 { color: #bdc1c6; }
-.aura-dark .aura-app .text-slate-500 { color: #9aa0a6; }
-.aura-dark .aura-app .text-slate-400 { color: #9aa0a6; }
-.aura-dark .aura-app .text-slate-300 { color: #6f7378; }
+.aura-dark .aura-app .text-slate-800 {
+  color: #f1f3f4;
+}
+.aura-dark .aura-app .text-slate-700 {
+  color: #dadce0;
+}
+.aura-dark .aura-app .text-slate-600 {
+  color: #bdc1c6;
+}
+.aura-dark .aura-app .text-slate-500 {
+  color: #9aa0a6;
+}
+.aura-dark .aura-app .text-slate-400 {
+  color: #9aa0a6;
+}
+.aura-dark .aura-app .text-slate-300 {
+  color: #6f7378;
+}
 
 .aura-dark .aura-app .border-slate-200,
 .aura-dark .aura-app .border-slate-200\/80,
 .aura-dark .aura-app .border-slate-100,
-.aura-dark .aura-app .border-slate-200\/40 { border-color: #45464a; }
-.aura-dark .aura-app .hover\:bg-slate-50:hover { background-color: #35363a; }
+.aura-dark .aura-app .border-slate-200\/40 {
+  border-color: #45464a;
+}
+.aura-dark .aura-app .hover\:bg-slate-50:hover {
+  background-color: #35363a;
+}
 .aura-dark .aura-app .hover\:bg-slate-100:hover,
 .aura-dark .aura-app .hover\:bg-slate-200:hover,
-.aura-dark .aura-app .hover\:bg-slate-200\/50:hover { background-color: #3c4043; }
-.aura-dark .aura-app .bg-slate-200\/60 { background-color: #3c4043; }
-.aura-dark .aura-app .hover\:bg-white:hover { background-color: #3c4043; }
+.aura-dark .aura-app .hover\:bg-slate-200\/50:hover {
+  background-color: #3c4043;
+}
+.aura-dark .aura-app .bg-slate-200\/60 {
+  background-color: #3c4043;
+}
+.aura-dark .aura-app .hover\:bg-white:hover {
+  background-color: #3c4043;
+}
 .aura-dark .aura-app .hover\:text-slate-800:hover,
-.aura-dark .aura-app .hover\:text-slate-900:hover { color: #ffffff; }
+.aura-dark .aura-app .hover\:text-slate-900:hover {
+  color: #ffffff;
+}
 
 .aura-dark .aura-app input,
 .aura-dark .aura-app textarea,
@@ -172,27 +330,59 @@ body {
   border-color: #5f6368;
 }
 .aura-dark .aura-app input::placeholder,
-.aura-dark .aura-app textarea::placeholder { color: #9aa0a6; }
-.aura-dark .aura-app input[type="time"] { color-scheme: dark; }
-.aura-dark .aura-app .task-add-input { background-color: transparent; border-color: transparent; }
-.aura-dark .aura-app .task-add-input:focus { border-color: transparent; box-shadow: none; }
+.aura-dark .aura-app textarea::placeholder {
+  color: #9aa0a6;
+}
+.aura-dark .aura-app input[type="time"] {
+  color-scheme: dark;
+}
+.aura-dark .aura-app .task-add-input {
+  background-color: transparent;
+  border-color: transparent;
+}
+.aura-dark .aura-app .task-add-input:focus {
+  border-color: transparent;
+  box-shadow: none;
+}
 .aura-dark .aura-app input:focus,
 .aura-dark .aura-app textarea:focus,
-.aura-dark .aura-app select:focus { border-color: #8ab4f8; box-shadow: 0 0 0 3px rgb(138 180 248 / 0.18); }
+.aura-dark .aura-app select:focus {
+  border-color: #8ab4f8;
+  box-shadow: 0 0 0 3px rgb(138 180 248 / 0.18);
+}
 
 .aura-dark .aura-app .bg-blue-50,
 .aura-dark .aura-app .bg-emerald-50,
 .aura-dark .aura-app .bg-rose-50,
 .aura-dark .aura-app .bg-amber-50,
 .aura-dark .aura-app .bg-violet-50,
-.aura-dark .aura-app .bg-cyan-50 { background-color: #303134; }
+.aura-dark .aura-app .bg-cyan-50 {
+  background-color: #303134;
+}
 .aura-dark .aura-app .bg-blue-50.text-blue-700,
-.aura-dark .aura-app .bg-blue-50.text-blue-600 { background-color: #174ea6; color: #d2e3fc; }
-.aura-dark .aura-app .hover\:bg-blue-50:hover { background-color: #174ea6; color: #ffffff; }
-.aura-dark .aura-app .hover\:bg-blue-100\/70:hover { background-color: #174ea6; }
-.aura-dark .aura-app .hover\:bg-blue-700:hover { background-color: #8ab4f8; color: #202124; }
-.aura-dark .aura-app .hover\:bg-rose-50:hover { background-color: #4a2529; color: #f28b82; }
-.aura-dark .aura-app .hover\:bg-rose-500:hover { background-color: #a33b45; color: #ffffff; }
+.aura-dark .aura-app .bg-blue-50.text-blue-600 {
+  background-color: #174ea6;
+  color: #d2e3fc;
+}
+.aura-dark .aura-app .hover\:bg-blue-50:hover {
+  background-color: #174ea6;
+  color: #ffffff;
+}
+.aura-dark .aura-app .hover\:bg-blue-100\/70:hover {
+  background-color: #174ea6;
+}
+.aura-dark .aura-app .hover\:bg-blue-700:hover {
+  background-color: #8ab4f8;
+  color: #202124;
+}
+.aura-dark .aura-app .hover\:bg-rose-50:hover {
+  background-color: #4a2529;
+  color: #f28b82;
+}
+.aura-dark .aura-app .hover\:bg-rose-500:hover {
+  background-color: #a33b45;
+  color: #ffffff;
+}
 
 /* Keep task date controls quiet on hover instead of using the bright blue accent. */
 .aura-dark .aura-app .task-quick-date:hover,
@@ -205,31 +395,64 @@ body {
   background-color: #3c4043;
   color: #f1f3f4;
 }
-.aura-dark .aura-app .month-outside-day { background-color: #252629; }
-.aura-dark .aura-app .month-outside-day-number { color: #9aa0a6; }
+.aura-dark .aura-app .month-outside-day {
+  background-color: #252629;
+}
+.aura-dark .aura-app .month-outside-day-number {
+  color: #9aa0a6;
+}
 
 .aura-dark .aura-app .shadow-xl,
 .aura-dark .aura-app .shadow-2xl,
-.aura-dark .aura-app .shadow-lg { --tw-shadow-color: rgb(0 0 0 / 0.42); }
-.aura-dark .aura-app .ring-white { --tw-ring-color: #292a2d; }
+.aura-dark .aura-app .shadow-lg {
+  --tw-shadow-color: rgb(0 0 0 / 0.42);
+}
+.aura-dark .aura-app .ring-white {
+  --tw-ring-color: #292a2d;
+}
 
-.aura-dark .aura-auth-shell { background-color: #202124; color: #e8eaed; }
-.aura-dark .aura-auth-brand-panel { background-color: #0f3d3a; }
-.aura-dark .aura-auth-form-panel { background-color: #202124; }
+.aura-dark .aura-auth-shell {
+  background-color: #202124;
+  color: #e8eaed;
+}
+.aura-dark .aura-auth-brand-panel {
+  background-color: #0f3d3a;
+}
+.aura-dark .aura-auth-form-panel {
+  background-color: #202124;
+}
 .aura-dark .aura-auth-shell .text-slate-950,
 .aura-dark .aura-auth-shell .text-slate-900,
 .aura-dark .aura-auth-shell .text-slate-800,
-.aura-dark .aura-auth-shell .text-slate-700 { color: #f1f3f4; }
+.aura-dark .aura-auth-shell .text-slate-700 {
+  color: #f1f3f4;
+}
 .aura-dark .aura-auth-shell .text-slate-500,
-.aura-dark .aura-auth-shell .text-slate-400 { color: #bdc1c6; }
+.aura-dark .aura-auth-shell .text-slate-400 {
+  color: #bdc1c6;
+}
 .aura-dark .aura-auth-shell .bg-white,
-.aura-dark .aura-auth-shell .bg-slate-200\/70 { background-color: #292a2d; }
-.aura-dark .aura-auth-shell .border-slate-200 { border-color: #5f6368; }
-.aura-dark .aura-auth-shell .hover\:bg-slate-50:hover { background-color: #3c4043; }
-.aura-dark .aura-auth-shell .bg-emerald-50 { background-color: #123b2a; }
-.aura-dark .aura-auth-shell .text-emerald-700 { color: #81c995; }
-.aura-dark .aura-auth-shell .bg-rose-50 { background-color: #4a1f24; }
-.aura-dark .aura-auth-shell .text-rose-700 { color: #f28b82; }
+.aura-dark .aura-auth-shell .bg-slate-200\/70 {
+  background-color: #292a2d;
+}
+.aura-dark .aura-auth-shell .border-slate-200 {
+  border-color: #5f6368;
+}
+.aura-dark .aura-auth-shell .hover\:bg-slate-50:hover {
+  background-color: #3c4043;
+}
+.aura-dark .aura-auth-shell .bg-emerald-50 {
+  background-color: #123b2a;
+}
+.aura-dark .aura-auth-shell .text-emerald-700 {
+  color: #81c995;
+}
+.aura-dark .aura-auth-shell .bg-rose-50 {
+  background-color: #4a1f24;
+}
+.aura-dark .aura-auth-shell .text-rose-700 {
+  color: #f28b82;
+}
 
 /* Keep calendar geometry and scrollbar treatment quiet and consistent. */
 .calendar-week-columns,
@@ -239,7 +462,7 @@ body {
 
 .calendar-week {
   --calendar-scrollbar-width: 8px;
-    --calendar-scrollbar-width: 0px;
+  --calendar-scrollbar-width: 0px;
 }
 .calendar-week-columns {
   width: calc(100% - var(--calendar-scrollbar-width));
@@ -260,46 +483,100 @@ body {
   scrollbar-width: thin;
 }
 .calendar-week-scroll::-webkit-scrollbar,
-.custom-scrollbar::-webkit-scrollbar { width: var(--calendar-scrollbar-width, 8px); height: 8px; }
+.custom-scrollbar::-webkit-scrollbar {
+  width: var(--calendar-scrollbar-width, 8px);
+  height: 8px;
+}
 .calendar-week-scroll::-webkit-scrollbar-track,
-.custom-scrollbar::-webkit-scrollbar-track { background: #e8eaed; }
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: #e8eaed;
+}
 .calendar-week-scroll::-webkit-scrollbar-thumb,
-.custom-scrollbar::-webkit-scrollbar-thumb { background: #9aa0a6; border: 2px solid #e8eaed; border-radius: 8px; }
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #9aa0a6;
+  border: 2px solid #e8eaed;
+  border-radius: 8px;
+}
 .calendar-week-scroll::-webkit-scrollbar-thumb:hover,
-.custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #6f7378; }
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #6f7378;
+}
 
-.calendar-hour-line { border-color: rgb(95 99 104 / 0.16); }
-.calendar-half-hour-line { border-color: rgb(95 99 104 / 0.08); }
+.calendar-hour-line {
+  border-color: rgb(95 99 104 / 0.16);
+}
+.calendar-half-hour-line {
+  border-color: rgb(95 99 104 / 0.08);
+}
 
-.aura-dark .calendar-week-scroll { scrollbar-color: #6f7378 #303134; }
-.aura-dark .custom-scrollbar { scrollbar-color: #6f7378 #303134; }
+.aura-dark .calendar-week-scroll {
+  scrollbar-color: #6f7378 #303134;
+}
+.aura-dark .custom-scrollbar {
+  scrollbar-color: #6f7378 #303134;
+}
 .aura-dark .calendar-week-scroll::-webkit-scrollbar-track,
-.aura-dark .custom-scrollbar::-webkit-scrollbar-track { background: #303134; }
+.aura-dark .custom-scrollbar::-webkit-scrollbar-track {
+  background: #303134;
+}
 .aura-dark .calendar-week-scroll::-webkit-scrollbar-thumb,
-.aura-dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #6f7378; border-color: #303134; }
+.aura-dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #6f7378;
+  border-color: #303134;
+}
 .aura-dark .calendar-week-scroll::-webkit-scrollbar-thumb:hover,
-.aura-dark .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #9aa0a6; }
-.aura-dark .calendar-hour-line { border-color: rgb(218 220 224 / 0.14); }
-.aura-dark .calendar-half-hour-line { border-color: rgb(218 220 224 / 0.07); }
+.aura-dark .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9aa0a6;
+}
+.aura-dark .calendar-hour-line {
+  border-color: rgb(218 220 224 / 0.14);
+}
+.aura-dark .calendar-half-hour-line {
+  border-color: rgb(218 220 224 / 0.07);
+}
 
 /* Keep day separators invisible in the dark calendar view. */
-.aura-dark .calendar-week .border-slate-100\/30 { border-color: transparent; }
+.aura-dark .calendar-week .border-slate-100\/30 {
+  border-color: transparent;
+}
 
 /* Match the light theme's blue selected-view label without a bright pill. */
-.aura-dark .aura-app .bg-white.text-blue-600 { background-color: #202124; color: #8ab4f8; }
+.aura-dark .aura-app .bg-white.text-blue-600 {
+  background-color: #202124;
+  color: #8ab4f8;
+}
 
 .tasks-scroll {
   scrollbar-color: #9aa0a6 #e8eaed;
   scrollbar-width: thin;
 }
-.tasks-scroll::-webkit-scrollbar { width: 8px; }
-.tasks-scroll::-webkit-scrollbar-track { background: #e8eaed; }
-.tasks-scroll::-webkit-scrollbar-thumb { background: #9aa0a6; border: 2px solid #e8eaed; border-radius: 8px; }
-.tasks-scroll::-webkit-scrollbar-thumb:hover { background: #6f7378; }
-.aura-dark .tasks-scroll { scrollbar-color: #6f7378 #303134; }
-.aura-dark .tasks-scroll::-webkit-scrollbar-track { background: #303134; }
-.aura-dark .tasks-scroll::-webkit-scrollbar-thumb { background: #6f7378; border-color: #303134; }
-.aura-dark .tasks-scroll::-webkit-scrollbar-thumb:hover { background: #9aa0a6; }
+.tasks-scroll::-webkit-scrollbar {
+  width: 8px;
+}
+.tasks-scroll::-webkit-scrollbar-track {
+  background: #e8eaed;
+}
+.tasks-scroll::-webkit-scrollbar-thumb {
+  background: #9aa0a6;
+  border: 2px solid #e8eaed;
+  border-radius: 8px;
+}
+.tasks-scroll::-webkit-scrollbar-thumb:hover {
+  background: #6f7378;
+}
+.aura-dark .tasks-scroll {
+  scrollbar-color: #6f7378 #303134;
+}
+.aura-dark .tasks-scroll::-webkit-scrollbar-track {
+  background: #303134;
+}
+.aura-dark .tasks-scroll::-webkit-scrollbar-thumb {
+  background: #6f7378;
+  border-color: #303134;
+}
+.aura-dark .tasks-scroll::-webkit-scrollbar-thumb:hover {
+  background: #9aa0a6;
+}
 
 .task-row:hover {
   background-color: #f8fafc;
