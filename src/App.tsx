@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Menu, ListTodo, Moon } from "lucide-react";
+import { Menu, ListTodo } from "lucide-react";
 import type { User } from "@supabase/supabase-js";
 import type { Task, TaskList, UserCalendar, UserEvent } from "./types";
 import Sidebar from "./components/Sidebar";
@@ -310,10 +310,7 @@ function App() {
         >
           <Menu size={20} strokeWidth={2.5} />
         </button>
-        <span className="font-extrabold text-slate-900 text-lg tracking-tight flex items-center gap-2">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm shadow-blue-600/20">
-            <Moon size={15} fill="currentColor" strokeWidth={2.5} />
-          </span>
+        <span className="font-extrabold text-slate-900 text-lg tracking-tight">
           aura
         </span>
         <button

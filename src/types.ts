@@ -12,6 +12,18 @@ export type RecurrenceType =
   | "custom"
   | null;
 
+export type RecurrenceUnit = "day" | "week" | "month" | "year";
+export type RecurrenceStop = "never" | "date" | "occurrences";
+
+export type RecurrenceRule = {
+  interval: number;
+  unit: RecurrenceUnit;
+  weekdays: number[];
+  stop: RecurrenceStop;
+  endDate: string | null;
+  occurrences: number | null;
+};
+
 export type Priority = "low" | "medium" | "high";
 
 export type Task = {
@@ -23,6 +35,7 @@ export type Task = {
   description?: string;
   priority?: Priority;
   recurrence: RecurrenceType;
+  recurrenceRule?: RecurrenceRule;
   listId: string;
   createdAt: string;
 };

@@ -26,6 +26,13 @@ create table if not exists public.tasks (
   description text,
   priority text check (priority in ('low', 'medium', 'high')),
   recurrence text check (recurrence in ('daily', 'weekdays', 'weekly', 'monthly', 'yearly', 'custom')),
+  recurrence_interval integer not null default 1 check (recurrence_interval > 0),
+  recurrence_unit text check (recurrence_unit in ('day', 'week', 'month', 'year')),
+  recurrence_weekdays smallint[] not null default '{}',
+  recurrence_stop text not null default 'never' check (recurrence_stop in ('never', 'date', 'occurrences')),
+  recurrence_end_date date,
+  recurrence_occurrences integer check (recurrence_occurrences > 0),
+  check (recurrence is null or due_date is not null),
   created_at timestamptz not null default now()
 );
 

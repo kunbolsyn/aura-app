@@ -27,7 +27,7 @@ const HOURS = Array.from(
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
-type View = "day" | "3day" | "week" | "month" | "year" | "agenda";
+type View = "day" | "week" | "month" | "year" | "agenda";
 
 type Props = {
   events: UserEvent[];
@@ -455,6 +455,8 @@ type PopupAnchor = { x: number; y: number };
 
 type WeekViewProps = {
   weekDays: Date[];
+  mobileWeekDays?: Date[];
+  onSelectDate?: (date: Date) => void;
   events: UserEvent[];
   tasks: Task[];
   calendars: UserCalendar[];
@@ -468,6 +470,8 @@ type WeekViewProps = {
 
 function WeekView({
   weekDays,
+  mobileWeekDays,
+  onSelectDate,
   events,
   tasks,
   calendars,
@@ -599,216 +603,257 @@ function WeekView({
         } as React.CSSProperties
       }
     >
-      {/* Day headers */}
-      <div
-        className="calendar-week-columns grid border-b border-slate-200 shrink-0 bg-white"
-        style={{
-          gridTemplateColumns: `60px repeat(${weekDays.length}, minmax(0, 1fr))`,
-        }}
-      >
-        <div className="border-r border-slate-100/30" />
-        {weekDays.map((day, i) => (
-          <div
-            key={i}
-            className="text-center py-2.5 border-r border-slate-100/30 last:border-r-0"
-          >
-            <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
-              {day.toLocaleDateString("en-GB", { weekday: "short" })}
-            </p>
-            <div
-              className={`text-base font-bold mt-1 mx-auto w-8 h-8 flex items-center justify-center rounded-xl transition-all ${
-                isSameDay(day, today)
-                  ? "bg-blue-600 text-white shadow-xs shadow-blue-600/25"
-                  : "text-slate-800"
-              }`}
-            >
-              {day.getDate()}
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* All-day tasks row */}
-      <div
-        className="calendar-week-columns grid border-b border-slate-200 shrink-0 bg-slate-50"
-        style={{
-          gridTemplateColumns: `60px repeat(${weekDays.length}, minmax(0, 1fr))`,
-        }}
-      >
-        <div className="border-r border-slate-100/30 flex items-center justify-end pr-2.5 py-1.5">
-          {onToggleTasks ? (
+      {mobileWeekDays && onSelectDate && (
+        <div className="grid grid-cols-7 gap-1 border-b border-slate-200 bg-white px-3 py-2 md:hidden">
+          {mobileWeekDays.map((day) => (
             <button
-              onClick={onToggleTasks}
-              className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider hover:text-blue-700 hover:bg-slate-50 px-2 py-1 rounded transition-all"
+              key={toISODate(day)}
+              type="button"
+              onClick={() => onSelectDate(day)}
+              className={`flex min-w-0 flex-col items-center rounded-xl px-1 py-1.5 transition-colors ${
+                isSameDay(day, weekDays[0])
+                  ? "bg-blue-50 text-blue-700"
+                  : "text-slate-500 hover:bg-slate-50"
+              }`}
+              aria-label={`Show ${day.toLocaleDateString("en-GB", { weekday: "long", day: "numeric", month: "long" })}`}
             >
-              Tasks
+              <span className="text-[9px] font-extrabold uppercase tracking-wider">
+                {day.toLocaleDateString("en-GB", { weekday: "short" })}
+              </span>
+              <span
+                className={`mt-1 flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold ${
+                  isSameDay(day, today)
+                    ? "bg-blue-600 text-white shadow-xs shadow-blue-600/25"
+                    : ""
+                }`}
+              >
+                {day.getDate()}
+              </span>
             </button>
-          ) : (
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
-              Tasks
-            </span>
-          )}
+          ))}
         </div>
-        {weekDays.map((day, i) => (
+      )}
+
+      <div className="calendar-week-content min-h-0 flex-1 overflow-x-hidden overflow-y-hidden">
+        <div className="calendar-week-inner flex h-full min-w-0 flex-col">
+          {/* Day headers */}
           <div
-            key={i}
-            className="min-w-0 border-r border-slate-100/30 last:border-r-0 p-1.5 min-h-8 flex flex-col gap-1 bg-slate-100/30"
+            className={`calendar-week-columns grid border-b border-slate-200 shrink-0 bg-white ${mobileWeekDays ? "hidden md:grid" : ""}`}
+            style={{
+              gridTemplateColumns: `60px repeat(${weekDays.length}, minmax(0, 1fr))`,
+            }}
           >
-            {getTasksForDay(day).map((task) => (
-              <div
-                key={task.id}
-                title={task.title}
-                className="block min-w-0 w-full overflow-hidden text-ellipsis whitespace-nowrap text-[11px] font-bold text-slate-700 bg-white border border-slate-200 border-l-4 border-l-slate-500 rounded-lg px-2 py-1 shadow-2xs"
-              >
-                {task.title}
-              </div>
-            ))}
-          </div>
-        ))}
-      </div>
-
-      {/* Time grid */}
-      <div
-        className="calendar-week-scroll flex-1 overflow-y-scroll"
-        ref={scrollRef}
-      >
-        <div
-          className="grid relative"
-          style={{
-            gridTemplateColumns: `60px repeat(${weekDays.length}, minmax(0, 1fr))`,
-          }}
-        >
-          {/* Time labels */}
-          <div className="border-r border-slate-100/30 bg-white">
-            {HOURS.map((h) => (
-              <div
-                key={h}
-                style={{ height: HOUR_HEIGHT }}
-                className="flex items-start justify-end pr-3 pt-2"
-              >
-                <span className="text-xs font-bold text-slate-400 leading-none">
-                  {formatHour(h)}
-                </span>
-              </div>
-            ))}
-          </div>
-
-          {/* Day columns */}
-          {weekDays.map((day, i) => {
-            const dayEvents = getEventsForDay(day);
-            const isDraggingHere = dragRange && isSameDay(dragRange.day, day);
-            const isDragOver = dragOverCol === toISODate(day);
-
-            return (
+            <div className="border-r border-slate-100/30" />
+            {weekDays.map((day, i) => (
               <div
                 key={i}
-                className={`border-r border-slate-100/30 last:border-r-0 relative select-none cursor-crosshair transition-colors ${
-                  isSameDay(day, today) ? "bg-blue-50/15" : "bg-white"
-                } ${isDragOver ? "bg-blue-50/60" : ""}`}
-                style={{ height: HOUR_HEIGHT * HOURS.length }}
-                onMouseDown={(e) => handleMouseDown(e, day)}
-                onMouseMove={(e) => handleMouseMove(e, day)}
-                onMouseUp={handleMouseUp}
-                onMouseLeave={() => {
-                  if (dragStart.current) {
-                    dragStart.current = null;
-                    setDragRange(null);
-                  }
-                }}
-                onDragOver={(e) => handleDragOver(e, day)}
-                onDrop={(e) => handleDrop(e, day)}
-                onDragLeave={() => setDragOverCol(null)}
+                className="text-center py-2.5 border-r border-slate-100/30 last:border-r-0"
               >
-                {/* Hour lines */}
+                <p className="text-[10px] font-extrabold text-slate-400 uppercase tracking-widest">
+                  {day.toLocaleDateString("en-GB", { weekday: "short" })}
+                </p>
+                <div
+                  className={`text-base font-bold mt-1 mx-auto w-8 h-8 flex items-center justify-center rounded-xl transition-all ${
+                    isSameDay(day, today)
+                      ? "bg-blue-600 text-white shadow-xs shadow-blue-600/25"
+                      : "text-slate-800"
+                  }`}
+                >
+                  {day.getDate()}
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* All-day tasks row */}
+          <div
+            className="calendar-week-columns grid border-b border-slate-200 shrink-0 bg-slate-50"
+            style={{
+              gridTemplateColumns: `60px repeat(${weekDays.length}, minmax(0, 1fr))`,
+            }}
+          >
+            <div className="border-r border-slate-100/30 flex items-center justify-end pr-2.5 py-1.5">
+              {onToggleTasks ? (
+                <button
+                  onClick={onToggleTasks}
+                  className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider hover:text-blue-700 hover:bg-slate-50 px-2 py-1 rounded transition-all"
+                >
+                  Tasks
+                </button>
+              ) : (
+                <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider">
+                  Tasks
+                </span>
+              )}
+            </div>
+            {weekDays.map((day, i) => (
+              <div
+                key={i}
+                className="min-w-0 border-r border-slate-100/30 last:border-r-0 p-1.5 min-h-8 flex flex-col gap-1 bg-slate-100/30"
+              >
+                {getTasksForDay(day).map((task) => (
+                  <div
+                    key={task.id}
+                    title={task.title}
+                    className="block min-w-0 w-full overflow-hidden text-ellipsis whitespace-nowrap text-[11px] font-bold text-slate-700 bg-white border border-slate-200 border-l-4 border-l-slate-500 rounded-lg px-2 py-1 shadow-2xs"
+                  >
+                    {task.title}
+                  </div>
+                ))}
+              </div>
+            ))}
+          </div>
+
+          {/* Time grid */}
+          <div
+            className="calendar-week-scroll min-h-0 flex-1 overflow-y-scroll"
+            ref={scrollRef}
+          >
+            <div
+              className="grid relative"
+              style={{
+                gridTemplateColumns: `60px repeat(${weekDays.length}, minmax(0, 1fr))`,
+              }}
+            >
+              {/* Time labels */}
+              <div className="border-r border-slate-100/30 bg-white">
                 {HOURS.map((h) => (
                   <div
                     key={h}
-                    className="calendar-hour-line absolute w-full border-t border-slate-100 pointer-events-none"
-                    style={{ top: (h - START_HOUR) * HOUR_HEIGHT }}
-                  />
+                    style={{ height: HOUR_HEIGHT }}
+                    className="flex items-start justify-end pr-3 pt-2"
+                  >
+                    <span className="text-xs font-bold text-slate-400 leading-none">
+                      {formatHour(h)}
+                    </span>
+                  </div>
                 ))}
-
-                {/* Half-hour lines */}
-                {HOURS.map((h) => (
-                  <div
-                    key={`half-${h}`}
-                    className="calendar-half-hour-line absolute w-full border-t border-slate-50/50 border-dashed pointer-events-none"
-                    style={{
-                      top: (h - START_HOUR) * HOUR_HEIGHT + HOUR_HEIGHT / 2,
-                    }}
-                  />
-                ))}
-
-                {/* Drag preview */}
-                {isDraggingHere && dragRange && (
-                  <div
-                    className="absolute left-1 right-1 bg-blue-100/80 border-2 border-blue-400 rounded-xl pointer-events-none z-10"
-                    style={{
-                      top: (dragRange.startHour - START_HOUR) * HOUR_HEIGHT,
-                      height: Math.max(
-                        (dragRange.endHour - dragRange.startHour) * HOUR_HEIGHT,
-                        22,
-                      ),
-                    }}
-                  />
-                )}
-
-                {/* Events */}
-                {dayEvents.map((event) => {
-                  const start = new Date(event.startDate);
-                  const end = new Date(event.endDate);
-                  const top =
-                    (start.getHours() + start.getMinutes() / 60 - START_HOUR) *
-                    HOUR_HEIGHT;
-                  const height = Math.max(
-                    ((end.getTime() - start.getTime()) / 3600000) * HOUR_HEIGHT,
-                    24,
-                  );
-                  const color = getCalendarColor(event.calendarId);
-
-                  return (
-                    <div
-                      key={event.id}
-                      draggable
-                      onMouseDown={(e) => e.stopPropagation()}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        onSelectEvent(event, {
-                          x: rect.left,
-                          y: rect.bottom + 8,
-                        });
-                      }}
-                      onDragStart={(e) => {
-                        e.stopPropagation();
-                        setDraggedEventId(event.id);
-                        e.dataTransfer.setData("eventId", event.id);
-                        e.dataTransfer.effectAllowed = "move";
-                      }}
-                      onDragEnd={() => setDraggedEventId(null)}
-                      className={`absolute left-1 right-1 rounded-xl border-l-4 px-2 py-1 text-xs font-bold overflow-hidden cursor-grab shadow-2xs z-10 transition-all ${draggedEventId === event.id ? "bg-slate-200 border-slate-400 text-slate-500 opacity-80" : COLOR_EVENT[color]}`}
-                      style={{ top, height }}
-                    >
-                      <p className="truncate leading-tight font-extrabold">
-                        {event.title}
-                      </p>
-                      <p className="text-[10px] opacity-75 font-semibold mt-0.5 leading-tight">
-                        {start.toLocaleTimeString("en-GB", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                        {" – "}
-                        {end.toLocaleTimeString("en-GB", {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-                  );
-                })}
               </div>
-            );
-          })}
+
+              {/* Day columns */}
+              {weekDays.map((day, i) => {
+                const dayEvents = getEventsForDay(day);
+                const isDraggingHere =
+                  dragRange && isSameDay(dragRange.day, day);
+                const isDragOver = dragOverCol === toISODate(day);
+
+                return (
+                  <div
+                    key={i}
+                    className={`border-r border-slate-100/30 last:border-r-0 relative select-none cursor-crosshair transition-colors ${
+                      isSameDay(day, today) ? "bg-blue-50/15" : "bg-white"
+                    } ${isDragOver ? "bg-blue-50/60" : ""}`}
+                    style={{ height: HOUR_HEIGHT * HOURS.length }}
+                    onMouseDown={(e) => handleMouseDown(e, day)}
+                    onMouseMove={(e) => handleMouseMove(e, day)}
+                    onMouseUp={handleMouseUp}
+                    onMouseLeave={() => {
+                      if (dragStart.current) {
+                        dragStart.current = null;
+                        setDragRange(null);
+                      }
+                    }}
+                    onDragOver={(e) => handleDragOver(e, day)}
+                    onDrop={(e) => handleDrop(e, day)}
+                    onDragLeave={() => setDragOverCol(null)}
+                  >
+                    {/* Hour lines */}
+                    {HOURS.map((h) => (
+                      <div
+                        key={h}
+                        className="calendar-hour-line absolute w-full border-t border-slate-100 pointer-events-none"
+                        style={{ top: (h - START_HOUR) * HOUR_HEIGHT }}
+                      />
+                    ))}
+
+                    {/* Half-hour lines */}
+                    {HOURS.map((h) => (
+                      <div
+                        key={`half-${h}`}
+                        className="calendar-half-hour-line absolute w-full border-t border-slate-50/50 border-dashed pointer-events-none"
+                        style={{
+                          top: (h - START_HOUR) * HOUR_HEIGHT + HOUR_HEIGHT / 2,
+                        }}
+                      />
+                    ))}
+
+                    {/* Drag preview */}
+                    {isDraggingHere && dragRange && (
+                      <div
+                        className="absolute left-1 right-1 bg-blue-100/80 border-2 border-blue-400 rounded-xl pointer-events-none z-10"
+                        style={{
+                          top: (dragRange.startHour - START_HOUR) * HOUR_HEIGHT,
+                          height: Math.max(
+                            (dragRange.endHour - dragRange.startHour) *
+                              HOUR_HEIGHT,
+                            22,
+                          ),
+                        }}
+                      />
+                    )}
+
+                    {/* Events */}
+                    {dayEvents.map((event) => {
+                      const start = new Date(event.startDate);
+                      const end = new Date(event.endDate);
+                      const top =
+                        (start.getHours() +
+                          start.getMinutes() / 60 -
+                          START_HOUR) *
+                        HOUR_HEIGHT;
+                      const height = Math.max(
+                        ((end.getTime() - start.getTime()) / 3600000) *
+                          HOUR_HEIGHT,
+                        24,
+                      );
+                      const color = getCalendarColor(event.calendarId);
+
+                      return (
+                        <div
+                          key={event.id}
+                          draggable
+                          onMouseDown={(e) => e.stopPropagation()}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            const rect =
+                              e.currentTarget.getBoundingClientRect();
+                            onSelectEvent(event, {
+                              x: rect.left,
+                              y: rect.bottom + 8,
+                            });
+                          }}
+                          onDragStart={(e) => {
+                            e.stopPropagation();
+                            setDraggedEventId(event.id);
+                            e.dataTransfer.setData("eventId", event.id);
+                            e.dataTransfer.effectAllowed = "move";
+                          }}
+                          onDragEnd={() => setDraggedEventId(null)}
+                          className={`absolute left-1 right-1 rounded-xl border-l-4 px-2 py-1 text-xs font-bold overflow-hidden cursor-grab shadow-2xs z-10 transition-all ${draggedEventId === event.id ? "bg-slate-200 border-slate-400 text-slate-500 opacity-80" : COLOR_EVENT[color]}`}
+                          style={{ top, height }}
+                        >
+                          <p className="truncate leading-tight font-extrabold">
+                            {event.title}
+                          </p>
+                          <p className="text-[10px] opacity-75 font-semibold mt-0.5 leading-tight">
+                            {start.toLocaleTimeString("en-GB", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                            {" – "}
+                            {end.toLocaleTimeString("en-GB", {
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })}
+                          </p>
+                        </div>
+                      );
+                    })}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -819,6 +864,7 @@ function WeekView({
 
 type DayViewProps = {
   date: Date;
+  onSelectDate: (date: Date) => void;
   events: UserEvent[];
   tasks: Task[];
   calendars: UserCalendar[];
@@ -831,6 +877,7 @@ type DayViewProps = {
 
 function DayView({
   date,
+  onSelectDate,
   events,
   tasks,
   calendars,
@@ -843,6 +890,8 @@ function DayView({
   return (
     <WeekView
       weekDays={[date]}
+      mobileWeekDays={getWeekDays(date)}
+      onSelectDate={onSelectDate}
       events={events}
       tasks={tasks}
       calendars={calendars}
@@ -1207,11 +1256,6 @@ function Calendar({
       "en-GB",
       { day: "numeric", month: "short", year: "numeric" },
     )}`;
-  } else if (view === "3day") {
-    titleLabel = `${threeDays[0].toLocaleDateString("en-GB", { day: "numeric", month: "short" })} – ${threeDays[2].toLocaleDateString(
-      "en-GB",
-      { day: "numeric", month: "short", year: "numeric" },
-    )}`;
   } else if (view === "month") {
     titleLabel = currentDate.toLocaleDateString("en-GB", {
       month: "long",
@@ -1227,7 +1271,6 @@ function Calendar({
     const d = new Date(currentDate);
     if (view === "day") d.setDate(d.getDate() + dir);
     if (view === "week") d.setDate(d.getDate() + dir * 7);
-    if (view === "3day") d.setDate(d.getDate() + dir * 3);
     if (view === "month") d.setMonth(d.getMonth() + dir);
     if (view === "year") d.setFullYear(d.getFullYear() + dir);
     if (view === "agenda") d.setDate(d.getDate() + dir);
@@ -1412,13 +1455,10 @@ function Calendar({
           value={view}
           onChange={(value) => setView(value as View)}
           className="w-32 shrink-0 md:hidden"
-          options={(["day", "3day", "month", "year", "agenda"] as View[]).map(
+          options={(["day", "week", "month", "year", "agenda"] as View[]).map(
             (option) => ({
               value: option,
-              label:
-                option === "3day"
-                  ? "3 Days"
-                  : option.charAt(0).toUpperCase() + option.slice(1),
+              label: option.charAt(0).toUpperCase() + option.slice(1),
             }),
           )}
         />
@@ -1464,6 +1504,7 @@ function Calendar({
           {view === "day" && (
             <DayView
               date={currentDate}
+              onSelectDate={setCurrentDate}
               events={events}
               tasks={tasks}
               calendars={calendars}
@@ -1475,32 +1516,36 @@ function Calendar({
             />
           )}
           {view === "week" && (
-            <WeekView
-              weekDays={weekDays}
-              events={events}
-              tasks={tasks}
-              calendars={calendars}
-              visibleCalendarIds={visibleCalendarIds}
-              onCreateEvent={openCreatePopup}
-              onSelectEvent={selectEvent}
-              onMoveEvent={moveEvent}
-              onDropTask={handleDropTask}
-              onToggleTasks={onToggleTasks}
-            />
-          )}
-          {view === "3day" && (
-            <WeekView
-              weekDays={threeDays}
-              events={events}
-              tasks={tasks}
-              calendars={calendars}
-              visibleCalendarIds={visibleCalendarIds}
-              onCreateEvent={openCreatePopup}
-              onSelectEvent={selectEvent}
-              onMoveEvent={moveEvent}
-              onDropTask={handleDropTask}
-              onToggleTasks={onToggleTasks}
-            />
+            <>
+              <div className="hidden min-h-0 flex-1 md:flex">
+                <WeekView
+                  weekDays={weekDays}
+                  events={events}
+                  tasks={tasks}
+                  calendars={calendars}
+                  visibleCalendarIds={visibleCalendarIds}
+                  onCreateEvent={openCreatePopup}
+                  onSelectEvent={selectEvent}
+                  onMoveEvent={moveEvent}
+                  onDropTask={handleDropTask}
+                  onToggleTasks={onToggleTasks}
+                />
+              </div>
+              <div className="flex min-h-0 flex-1 md:hidden">
+                <WeekView
+                  weekDays={threeDays}
+                  events={events}
+                  tasks={tasks}
+                  calendars={calendars}
+                  visibleCalendarIds={visibleCalendarIds}
+                  onCreateEvent={openCreatePopup}
+                  onSelectEvent={selectEvent}
+                  onMoveEvent={moveEvent}
+                  onDropTask={handleDropTask}
+                  onToggleTasks={onToggleTasks}
+                />
+              </div>
+            </>
           )}
           {view === "month" && (
             <MonthView

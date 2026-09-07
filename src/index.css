@@ -435,11 +435,41 @@ body {
 .aura-dark .aura-auth-shell .bg-slate-200\/70 {
   background-color: #292a2d;
 }
+.aura-dark .aura-auth-shell .bg-white.text-slate-900 {
+  background-color: #3c4043;
+  color: #f1f3f4;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.3);
+}
 .aura-dark .aura-auth-shell .border-slate-200 {
   border-color: #5f6368;
 }
+.aura-dark .aura-auth-shell .hover\:border-slate-300:hover {
+  border-color: #8ab4f8;
+}
 .aura-dark .aura-auth-shell .hover\:bg-slate-50:hover {
   background-color: #3c4043;
+}
+.aura-dark .aura-auth-shell .hover\:text-slate-800:hover,
+.aura-dark .aura-auth-shell .hover\:text-slate-700:hover {
+  color: #ffffff;
+}
+.aura-dark .aura-auth-shell input {
+  background-color: #303134;
+  border-color: #5f6368;
+  color: #f1f3f4;
+}
+.aura-dark .aura-auth-shell input:focus {
+  border-color: #8ab4f8;
+  box-shadow: 0 0 0 3px rgb(138 180 248 / 0.18);
+}
+.aura-dark .aura-auth-shell input::placeholder {
+  color: #9aa0a6;
+}
+.aura-dark .aura-auth-shell .text-blue-600 {
+  color: #8ab4f8;
+}
+.aura-dark .aura-auth-shell .hover\:text-blue-700:hover {
+  color: #aecbfa;
 }
 .aura-dark .aura-auth-shell .bg-emerald-50 {
   background-color: #123b2a;

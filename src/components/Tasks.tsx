@@ -12,7 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react";
-import type { Task, TaskList, RecurrenceType } from "../types";
+import type { RecurrenceRule, RecurrenceType, Task, TaskList } from "../types";
 import { OptionMenu } from "./PickerControls";
 
 type Props = {
@@ -73,12 +73,67 @@ function getRelativeDateISO(daysFromToday: number): string {
   return toLocalISODate(date);
 }
 
+function defaultRecurrenceRule(): RecurrenceRule {
+  return {
+    interval: 1,
+    unit: "week",
+    weekdays: [new Date().getDay()],
+    stop: "never",
+    endDate: null,
+    occurrences: null,
+  };
+}
+
+function getMonday(date: Date): Date {
+  const monday = new Date(date);
+  monday.setDate(monday.getDate() - ((monday.getDay() + 6) % 7));
+  monday.setHours(12, 0, 0, 0);
+  return monday;
+}
+
 function calculateNextDate(
   currentDateStr: string,
   recurrence: NonNullable<RecurrenceType>,
+  recurrenceRule?: RecurrenceRule,
 ): string | null {
-  const d = new Date(currentDateStr);
+  const d = fromLocalISODate(currentDateStr);
   if (isNaN(d.getTime())) return null;
+
+  if (recurrence === "custom") {
+    const rule = recurrenceRule ?? defaultRecurrenceRule();
+    if (rule.stop === "occurrences" && (rule.occurrences ?? 0) <= 0)
+      return null;
+    const weekdays = rule.weekdays.length ? rule.weekdays : [d.getDay()];
+    const next = new Date(d);
+    if (rule.unit === "week") {
+      const currentMonday = getMonday(d);
+      for (let offset = 1; offset <= rule.interval * 7 + 7; offset += 1) {
+        const candidate = new Date(d);
+        candidate.setDate(d.getDate() + offset);
+        const weekOffset = Math.round(
+          (getMonday(candidate).getTime() - currentMonday.getTime()) /
+            (7 * 24 * 60 * 60 * 1000),
+        );
+        if (
+          weekdays.includes(candidate.getDay()) &&
+          weekOffset % rule.interval === 0
+        ) {
+          next.setTime(candidate.getTime());
+          break;
+        }
+      }
+    } else if (rule.unit === "day") {
+      next.setDate(next.getDate() + rule.interval);
+    } else if (rule.unit === "month") {
+      next.setMonth(next.getMonth() + rule.interval);
+    } else {
+      next.setFullYear(next.getFullYear() + rule.interval);
+    }
+    const nextDate = toLocalISODate(next);
+    if (rule.stop === "date" && rule.endDate && nextDate > rule.endDate)
+      return null;
+    return nextDate;
+  }
 
   switch (recurrence) {
     case "daily":
@@ -101,7 +156,7 @@ function calculateNextDate(
     default:
       return null;
   }
-  return d.toISOString().split("T")[0];
+  return toLocalISODate(d);
 }
 
 function groupTasks(tasks: Task[]): [string, Task[]][] {
@@ -130,6 +185,7 @@ const RECURRENCE_OPTIONS: NonNullable<RecurrenceType>[] = [
   "weekly",
   "monthly",
   "yearly",
+  "custom",
 ];
 
 // --- Custom Components ---
@@ -139,12 +195,16 @@ function CustomDatePicker({
   onChange,
   recurrence,
   onRecurrenceChange,
+  recurrenceRule,
+  onRecurrenceRuleChange,
   onClose,
 }: {
   value: string | null;
   onChange: (date: string | null) => void;
   recurrence: RecurrenceType;
   onRecurrenceChange: (r: RecurrenceType) => void;
+  recurrenceRule?: RecurrenceRule;
+  onRecurrenceRuleChange: (rule: RecurrenceRule) => void;
   onClose: () => void;
 }) {
   const [viewDate, setViewDate] = useState(() => fromLocalISODate(value));
@@ -282,6 +342,13 @@ function CustomDatePicker({
           </div>
         </div>
 
+        {recurrence === "custom" && (
+          <CustomRecurrenceFields
+            rule={recurrenceRule ?? defaultRecurrenceRule()}
+            onChange={onRecurrenceRuleChange}
+          />
+        )}
+
         <div className="flex gap-3">
           <button
             onClick={onClose}
@@ -293,6 +360,139 @@ function CustomDatePicker({
       </div>
     </div>,
     document.body,
+  );
+}
+
+function CustomRecurrenceFields({
+  rule,
+  onChange,
+}: {
+  rule: RecurrenceRule;
+  onChange: (rule: RecurrenceRule) => void;
+}) {
+  const weekdays = [
+    [1, "M"],
+    [2, "T"],
+    [3, "W"],
+    [4, "T"],
+    [5, "F"],
+    [6, "S"],
+    [0, "S"],
+  ] as const;
+  const update = (changes: Partial<RecurrenceRule>) =>
+    onChange({ ...rule, ...changes });
+
+  return (
+    <div className="mb-3 space-y-3 rounded-2xl bg-slate-50 p-3">
+      <div>
+        <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+          Repeat every
+        </label>
+        <div className="flex gap-2">
+          <input
+            type="number"
+            min={1}
+            max={999}
+            value={rule.interval}
+            onChange={(event) =>
+              update({ interval: Math.max(1, Number(event.target.value) || 1) })
+            }
+            className="w-20 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-500"
+          />
+          <OptionMenu
+            value={rule.unit}
+            onChange={(unit) =>
+              update({ unit: unit as RecurrenceRule["unit"] })
+            }
+            className="flex-1"
+            options={[
+              { value: "day", label: "Day" },
+              { value: "week", label: "Week" },
+              { value: "month", label: "Month" },
+              { value: "year", label: "Year" },
+            ]}
+          />
+        </div>
+      </div>
+
+      {rule.unit === "week" && (
+        <div>
+          <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+            On these days
+          </label>
+          <div className="grid grid-cols-7 gap-1">
+            {weekdays.map(([day, label]) => {
+              const selected = rule.weekdays.includes(day);
+              return (
+                <button
+                  key={day}
+                  type="button"
+                  onClick={() => {
+                    const next = selected
+                      ? rule.weekdays.filter((value) => value !== day)
+                      : [...rule.weekdays, day];
+                    update({ weekdays: next.length ? next : [day] });
+                  }}
+                  className={`rounded-lg py-1.5 text-xs font-bold ${selected ? "bg-blue-600 text-white" : "bg-white text-slate-500 hover:bg-blue-50"}`}
+                >
+                  {label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      <div>
+        <label className="mb-1.5 block text-[10px] font-black uppercase tracking-widest text-slate-400">
+          Stop repeating
+        </label>
+        <OptionMenu
+          value={rule.stop}
+          onChange={(stop) =>
+            update({
+              stop: stop as RecurrenceRule["stop"],
+              endDate:
+                stop === "date"
+                  ? (rule.endDate ?? getRelativeDateISO(30))
+                  : null,
+              occurrences:
+                stop === "occurrences" ? (rule.occurrences ?? 5) : null,
+            })
+          }
+          className="w-full"
+          options={[
+            { value: "never", label: "Never" },
+            { value: "date", label: "On a date" },
+            { value: "occurrences", label: "After a number of repeats" },
+          ]}
+        />
+        {rule.stop === "date" && (
+          <input
+            type="date"
+            value={rule.endDate ?? ""}
+            min={getRelativeDateISO(0)}
+            onChange={(event) =>
+              update({ endDate: event.target.value || null })
+            }
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-500"
+          />
+        )}
+        {rule.stop === "occurrences" && (
+          <input
+            type="number"
+            min={1}
+            value={rule.occurrences ?? 5}
+            onChange={(event) =>
+              update({
+                occurrences: Math.max(1, Number(event.target.value) || 1),
+              })
+            }
+            className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-700 outline-none focus:border-blue-500"
+          />
+        )}
+      </div>
+    </div>
   );
 }
 
@@ -312,6 +512,7 @@ export default function Tasks({
   const [input, setInput] = useState("");
   const [dueDate, setDueDate] = useState<string | null>(null);
   const [recurrence, setRecurrence] = useState<RecurrenceType>(null);
+  const [recurrenceRule, setRecurrenceRule] = useState<RecurrenceRule>();
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
 
@@ -368,13 +569,17 @@ export default function Tasks({
 
   function addTask() {
     if (!input.trim()) return;
+    const taskDueDate = recurrence
+      ? (dueDate ?? getRelativeDateISO(0))
+      : dueDate;
     const newTask: Task = {
       id: crypto.randomUUID(),
       title: input.trim(),
       completed: false,
-      dueDate: dueDate,
+      dueDate: taskDueDate,
       endDate: null,
       recurrence: recurrence,
+      recurrenceRule: recurrence === "custom" ? recurrenceRule : undefined,
       listId: activeListId,
       createdAt: new Date().toISOString(),
     };
@@ -382,6 +587,7 @@ export default function Tasks({
     setInput("");
     setDueDate(null);
     setRecurrence(null);
+    setRecurrenceRule(undefined);
   }
 
   function toggleTask(id: string) {
@@ -390,7 +596,17 @@ export default function Tasks({
       if (!task) return prev;
 
       if (!task.completed && task.recurrence && task.dueDate) {
-        const nextDate = calculateNextDate(task.dueDate, task.recurrence);
+        const nextDate = calculateNextDate(
+          task.dueDate,
+          task.recurrence,
+          task.recurrenceRule,
+        );
+        const nextRule = task.recurrenceRule?.occurrences
+          ? {
+              ...task.recurrenceRule,
+              occurrences: task.recurrenceRule.occurrences - 1,
+            }
+          : task.recurrenceRule;
         if (nextDate) {
           const nextTask: Task = {
             ...task,
@@ -398,6 +614,7 @@ export default function Tasks({
             dueDate: nextDate,
             createdAt: new Date().toISOString(),
             completed: false,
+            recurrenceRule: nextRule,
           };
 
           return [
@@ -729,7 +946,15 @@ export default function Tasks({
                     value={dueDate}
                     onChange={setDueDate}
                     recurrence={recurrence}
-                    onRecurrenceChange={setRecurrence}
+                    onRecurrenceChange={(next) => {
+                      setRecurrence(next);
+                      if (next && !dueDate) setDueDate(getRelativeDateISO(0));
+                      if (next === "custom" && !recurrenceRule)
+                        setRecurrenceRule(defaultRecurrenceRule());
+                      if (next !== "custom") setRecurrenceRule(undefined);
+                    }}
+                    recurrenceRule={recurrenceRule}
+                    onRecurrenceRuleChange={setRecurrenceRule}
                     onClose={() => setShowDatePicker(false)}
                   />
                 )}
@@ -904,6 +1129,9 @@ function TaskRow({
   const [editRecurrence, setEditRecurrence] = useState<RecurrenceType>(
     task.recurrence,
   );
+  const [editRecurrenceRule, setEditRecurrenceRule] = useState<
+    RecurrenceRule | undefined
+  >(task.recurrenceRule);
   const [showRowDatePicker, setShowRowDatePicker] = useState(false);
   const [showTaskSchedule, setShowTaskSchedule] = useState(false);
   const [showTaskMenu, setShowTaskMenu] = useState(false);
@@ -923,10 +1151,15 @@ function TaskRow({
 
   function handleSave() {
     if (editTitle.trim()) {
+      const taskDueDate = editRecurrence
+        ? (editDueDate ?? getRelativeDateISO(0))
+        : editDueDate;
       onUpdate(task.id, {
         title: editTitle.trim(),
-        dueDate: editDueDate,
+        dueDate: taskDueDate,
         recurrence: editRecurrence,
+        recurrenceRule:
+          editRecurrence === "custom" ? editRecurrenceRule : undefined,
       });
     }
     onStopEdit();
@@ -981,7 +1214,16 @@ function TaskRow({
                 value={editDueDate}
                 onChange={setEditDueDate}
                 recurrence={editRecurrence}
-                onRecurrenceChange={setEditRecurrence}
+                onRecurrenceChange={(next) => {
+                  setEditRecurrence(next);
+                  if (next && !editDueDate)
+                    setEditDueDate(getRelativeDateISO(0));
+                  if (next === "custom" && !editRecurrenceRule)
+                    setEditRecurrenceRule(defaultRecurrenceRule());
+                  if (next !== "custom") setEditRecurrenceRule(undefined);
+                }}
+                recurrenceRule={editRecurrenceRule}
+                onRecurrenceRuleChange={setEditRecurrenceRule}
                 onClose={() => setShowRowDatePicker(false)}
               />
             )}
@@ -1051,6 +1293,7 @@ function TaskRow({
                   event.stopPropagation();
                   setEditDueDate(task.dueDate);
                   setEditRecurrence(task.recurrence);
+                  setEditRecurrenceRule(task.recurrenceRule);
                   setShowTaskSchedule(true);
                 }}
                 className={`text-[10px] font-bold px-1.5 py-0.5 rounded-md transition-colors hover:opacity-80 ${
@@ -1122,11 +1365,23 @@ function TaskRow({
           value={editDueDate}
           onChange={setEditDueDate}
           recurrence={editRecurrence}
-          onRecurrenceChange={setEditRecurrence}
+          onRecurrenceChange={(next) => {
+            setEditRecurrence(next);
+            if (next && !editDueDate) setEditDueDate(getRelativeDateISO(0));
+            if (next === "custom" && !editRecurrenceRule)
+              setEditRecurrenceRule(defaultRecurrenceRule());
+            if (next !== "custom") setEditRecurrenceRule(undefined);
+          }}
+          recurrenceRule={editRecurrenceRule}
+          onRecurrenceRuleChange={setEditRecurrenceRule}
           onClose={() => {
             onUpdate(task.id, {
-              dueDate: editDueDate,
+              dueDate: editRecurrence
+                ? (editDueDate ?? getRelativeDateISO(0))
+                : editDueDate,
               recurrence: editRecurrence,
+              recurrenceRule:
+                editRecurrence === "custom" ? editRecurrenceRule : undefined,
             });
             setShowTaskSchedule(false);
           }}

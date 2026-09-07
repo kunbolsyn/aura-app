@@ -5,15 +5,12 @@
 1. In the Supabase dashboard, open **Project Settings > API** and copy the **Project URL** and the public **Publishable key** (or legacy `anon` key).
 2. Create `.env.local` in the project root using `.env.example` as the template:
 
-  ```env
-  VITE_SUPABASE_URL=https://your-project-ref.supabase.co
-  VITE_SUPABASE_ANON_KEY=your-public-anon-key
-  ```
+```env
+VITE_SUPABASE_URL=https://your-project-ref.supabase.co
+VITE_SUPABASE_ANON_KEY=your-public-anon-key
+```
 
-  Never put a `service_role` or secret key in a `VITE_` variable. Vite exposes `VITE_` values to the browser.
-3. In **SQL Editor**, open and run [`supabase/schema.sql`](supabase/schema.sql). This creates the four workspace tables, indexes, foreign keys, and Row Level Security policies.
-4. In **Authentication > Providers**, enable **Email**. For local development, add `http://localhost:5173/` and `http://127.0.0.1:5173/` under **URL Configuration > Redirect URLs**. Enable Google only after configuring its OAuth client credentials.
-5. Start the app with `npm run dev` and create an account. If email confirmation is enabled, confirm the message before signing in.
+Never put a `service_role` or secret key in a `VITE_` variable. Vite exposes `VITE_` values to the browser. 3. In **SQL Editor**, open and run [`supabase/schema.sql`](supabase/schema.sql). This creates the four workspace tables, indexes, foreign keys, and Row Level Security policies. 4. In **Authentication > Providers**, enable **Email**. For local development, add `http://localhost:5173/` and `http://127.0.0.1:5173/` under **URL Configuration > Redirect URLs**. Enable Google only after configuring its OAuth client credentials. 5. Start the app with `npm run dev` and create an account. If email confirmation is enabled, confirm the message before signing in.
 
 ### Security model
 
@@ -40,9 +37,9 @@ If you are developing a production application, we recommend updating the config
 
 ```js
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(["dist"]),
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ["**/*.{ts,tsx}"],
     extends: [
       // Other configs...
 
@@ -57,40 +54,40 @@ export default defineConfig([
     ],
     languageOptions: {
       parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
         tsconfigRootDir: import.meta.dirname,
       },
       // other options...
     },
   },
-])
+]);
 ```
 
 You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
 ```js
 // eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+import reactX from "eslint-plugin-react-x";
+import reactDom from "eslint-plugin-react-dom";
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(["dist"]),
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ["**/*.{ts,tsx}"],
     extends: [
       // Other configs...
       // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
+      reactX.configs["recommended-typescript"],
       // Enable lint rules for React DOM
       reactDom.configs.recommended,
     ],
     languageOptions: {
       parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
+        project: ["./tsconfig.node.json", "./tsconfig.app.json"],
         tsconfigRootDir: import.meta.dirname,
       },
       // other options...
     },
   },
-])
+]);
 ```
